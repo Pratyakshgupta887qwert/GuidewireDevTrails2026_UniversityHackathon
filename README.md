@@ -288,3 +288,15 @@ Add your repository link here:
 - Real payout rails integration + reconciliation
 - More robust fraud ML + audit logs
 - Policy lifecycle management + renewals + refunds (if needed)
+
+
+---
+
+
+## 📄 Product Requirements Document (PRD)
+
+Detailed PRD available for this project.  
+Please visit the link below for complete understanding:
+
+👉 <a href="https://gist.github.com/Pratyakshgupta887qwert/448847af9928fb5a6ce2cdeaad89b374">Link to Look over</a>
+---
