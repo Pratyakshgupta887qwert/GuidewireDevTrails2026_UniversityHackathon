@@ -102,6 +102,27 @@ Backend executes the same parametric engine as if the event came from a real API
 2. Trigger event (God Mode)
 3. Review claims and override fraud-flagged cases (Approve/Reject)
 
+
+sequenceDiagram
+    autonumber
+    participant WeatherAPI as External API / Admin Trigger
+    participant Backend as FastAPI + Celery
+    participant DB as PostGIS DB
+    participant Payment as Razorpay (Mock)
+    participant Worker as Worker Mobile App
+
+    WeatherAPI->>Backend: Alert: Rain > 15mm/hr in Zone A
+    Backend->>DB: Query: Find Active Policies in Zone A
+    DB-->>Backend: Returns Worker 1, Worker 2
+    
+    loop For Each Eligible Worker
+        Backend->>Backend: Fraud Check (GPS mismatch, Duplicate claim)
+        Backend->>Backend: Calculate: (Avg Income / Hrs) * Disruption Hrs
+        Backend->>Payment: POST /payout {upi_id, amount}
+        Payment-->>Backend: 200 OK (Txn Success)
+        Backend->>DB: Log Claim as PAID
+        Backend->>Worker: 🔔 Push Alert: "₹300 credited for Heavy Rain!"
+    end
 ---
 
 ## 4) Weekly Premium Model (How Pricing Works)
