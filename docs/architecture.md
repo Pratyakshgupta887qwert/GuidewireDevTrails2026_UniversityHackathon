@@ -1,0 +1,1 @@
+# detailed internal architecure
