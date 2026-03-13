@@ -102,6 +102,9 @@ Backend executes the same parametric engine as if the event came from a real API
 2. Trigger event (God Mode)
 3. Review claims and override fraud-flagged cases (Approve/Reject)
 
+
+<img width="839" height="475" alt="image" src="https://github.com/user-attachments/assets/711df0a3-14db-4869-ae38-a3eb3e6b6e47" />
+
 ---
 
 ## 4) Weekly Premium Model (How Pricing Works)
@@ -285,3 +288,15 @@ Add your repository link here:
 - Real payout rails integration + reconciliation
 - More robust fraud ML + audit logs
 - Policy lifecycle management + renewals + refunds (if needed)
+
+
+---
+
+
+## 📄 Product Requirements Document (PRD)
+
+Detailed PRD available for this project.  
+Please visit the link below for complete understanding:
+
+👉 <a href="https://gist.github.com/Pratyakshgupta887qwert/448847af9928fb5a6ce2cdeaad89b374">Link to Look over</a>
+---
