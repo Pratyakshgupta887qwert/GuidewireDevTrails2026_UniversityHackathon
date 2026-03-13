@@ -226,10 +226,6 @@ When an event affects a covered worker:
 - PostgreSQL + PostGIS (zones, geo queries)
 - Celery + Redis (background polling, bulk payout processing)
 
-### Notes (Hackathon Scope Controls)
-- Real UPI money transfers are out-of-scope; use Razorpay test flows / mocks.
-- Live weather polling can be replaced by Admin manual triggers for reliability.
-
 ---
 
 ## 10) Development Plan (24–48 Hour Hackathon)
