@@ -31,6 +31,7 @@ The system continuously monitors environmental and mobility signals such as:
 
 When these signals cross defined disruption thresholds, the platform automatically evaluates affected workers and calculates compensation.
 
+
 ### Objectives
 
 1. Protect gig workers from unpredictable income loss.
@@ -38,6 +39,27 @@ When these signals cross defined disruption thresholds, the platform automatical
 3. Provide transparent, affordable weekly protection.
 
 This model shifts insurance from **claim-based verification to event-based automation**.
+
+
+
+## 🔗 Detailed Documentation
+
+For deeper technical insights into our system design and implementation:
+
+### 🏛️ Architecture & System Design
+- [🏛️ Architecture Overview](./docs/architecture.md)
+- [🧩 System Architecture](./docs/system-architecture.md)
+- [🗂️ Database Schema](./docs/db-schema.md)
+
+### 🔌 Backend & APIs
+- [🔗 API Reference](./docs/api-reference.md)
+
+### 🧠 Intelligence Layer
+- [🧠 AI Risk Model](./docs/ai-risk.md)
+- [🚨 Fraud Detection](./docs/fraud-detection.md)
+
+### ✨ Product Details
+- [✨ Product Features](./docs/product-features.md)
 
 ---
 
@@ -211,6 +233,19 @@ Fraud checks include:
 
 ---
 
+## 🚨 Adversarial Defense & Anti-Spoofing Strategy
+
+To counter advanced GPS spoofing attacks and coordinated fraud rings, our platform uses a **multi-layered verification system beyond basic location checks**.
+
+-  **Behavioral Analysis:** Detects real movement patterns vs static/spoofed signals  
+-  **Multi-Signal Validation:** Uses device, network, and geo-spatial data (not just GPS)  
+-  **Fraud Ring Detection:** Identifies clustered claims, IP patterns, and synchronized activity  
+-  **Fair UX Handling:** Suspicious claims are flagged (not rejected), with trust-score-based approvals  
+
+👉 For detailed architecture and logic:  
+**[View Anti-Spoofing Strategy](./docs/anti-spoofing.md)**
+
+---
 ### Frontend Interfaces
 
 Two primary user interfaces interact with the platform.
