@@ -54,7 +54,7 @@ For deeper technical insights into our system design and implementation:
 ### 🏛️ Architecture & System Design
 - [🏛️ Architecture Overview](./docs/architecture.md)
 - [🧩 System Architecture](./docs/system-architecture.md)
-- [🗂️ Database Schema](./docs/db-schema.md)
+- [🗂️ Database Schema](./docs/database-schema.md)
 
 ### 🔌 Backend & APIs
 - [🔗 API Reference](./docs/api-reference.md)
