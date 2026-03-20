@@ -75,7 +75,7 @@ const Register = () => {
               <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zm-1 9a6 6 0 11-12 0 6 6 0 0112 0zM1 11a6 6 0 1112 0 6 6 0 01-12 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">GigGuard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">AegisAI: Smart Gig Insurance Platform</h1>
           <p className="text-gray-600 mt-2">Join Now</p>
         </div>
 

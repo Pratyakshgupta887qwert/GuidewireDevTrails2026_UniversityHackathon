@@ -13,7 +13,7 @@ const Landing = () => {
         <section className="mx-auto grid max-w-7xl items-center gap-10 md:grid-cols-2">
           <div>
             <p className="mb-3 inline-flex rounded-full border border-blue-200 bg-white/60 px-3 py-1 text-xs font-semibold tracking-widest text-blue-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-blue-100">
-              GIGGUARD FOR INDIA
+              AEGISAI FOR INDIA
             </p>
             <h1 className="text-4xl font-extrabold leading-tight text-slate-900 dark:text-slate-100 sm:text-5xl">
               Smart Parametric Income Insurance for Gig Workers
@@ -58,7 +58,7 @@ const Landing = () => {
         <section className="mx-auto mt-12 max-w-7xl">
           <h2 className="text-center text-3xl font-bold text-slate-900 dark:text-slate-100">The Problem We Solve</h2>
           <p className="mx-auto mt-3 max-w-2xl text-center text-slate-600 dark:text-slate-300">
-            Delivery workers lose earnings every time external disruptions hit. GigGuard restores confidence with compensation backed by real-time event triggers.
+            Delivery workers lose earnings every time external disruptions hit. AegisAI: Smart Gig Insurance Platform restores confidence with compensation backed by real-time event triggers.
           </p>
           <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
             {[

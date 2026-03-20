@@ -1,43 +1,70 @@
-# Smart Gig Insurance Platform
+# AegisAI : Smart Gig Insurance Platform
 ## AI-Powered Parametric Income Protection for Delivery Workers
 
 ---
 
-## 1. Problem & Context
+## ⚡ The Reality
 
-India’s gig economy runs on delivery workers who earn daily through platforms like food delivery, grocery delivery, and e-commerce logistics. Their income is highly dependent on external conditions — weather, pollution, local disruptions, and city-level mobility issues.
+A delivery worker starts his day expecting ₹800.
 
-When extreme rain floods streets, when AQI becomes hazardous, or when sudden restrictions affect mobility, deliveries slow down or stop completely. During these hours the worker simply earns nothing.
+By 2 PM, heavy rain hits. Roads flood. Orders stop.
 
-Traditional insurance products are not designed for this problem. They insure assets like vehicles or health, but they do not insure lost working hours. Claims are slow, require manual proof, and rarely match the short income cycles of gig workers.
+By night, he earns ₹0.
 
-This project explores a different approach: **parametric income insurance**, where payouts are automatically triggered when measurable external disruptions occur.
+No fault. No safety net.
 
-Instead of proving a loss, the system detects disruption signals and compensates workers based on the hours they could not work.
+Just lost income.
+
+---
+## ⚡ Problem → Solution
+
+India’s gig workers depend on daily earnings, but external disruptions like:
+- heavy rain  
+- pollution spikes  
+- traffic breakdowns  
+
+can instantly eliminate their income.
+
+Traditional insurance does not cover **lost working hours** and relies on slow, manual claims — making it ineffective for gig workers.
 
 ---
 
-## 2. Our Idea
+### 💡 Our Solution
 
-The platform provides **short-term parametric insurance** designed specifically for delivery workers.
+We built a **parametric income insurance platform** that provides **short-term (weekly) coverage** for delivery workers.
 
-Workers can activate a **weekly coverage policy** that protects their expected income when external disruptions occur in their operating zone.
+The system continuously monitors:
+- weather conditions  
+- air quality (AQI)  
+- traffic patterns  
 
-The system continuously monitors environmental and mobility signals such as:
+When disruption thresholds are crossed:
+- affected workers are automatically identified  
+- income loss is calculated  
+- payouts are triggered instantly  
 
-- weather intensity
-- pollution levels
-- traffic slowdowns
+👉 No claims. No delays. Just real-time income protection.
 
-When these signals cross defined disruption thresholds, the platform automatically evaluates affected workers and calculates compensation.
+---
 
-### Objectives
+## 🔗 Detailed Documentation
 
-1. Protect gig workers from unpredictable income loss.
-2. Remove manual claim processes.
-3. Provide transparent, affordable weekly protection.
+For deeper technical insights into our system design and implementation:
 
-This model shifts insurance from **claim-based verification to event-based automation**.
+### 🏛️ Architecture & System Design
+- [🏛️ Architecture Overview](./docs/architecture.md)
+- [🧩 System Architecture](./docs/system-architecture.md)
+- [🗂️ Database Schema](./docs/database-schema.md)
+
+### 🔌 Backend & APIs
+- [🔗 API Reference](./docs/api-reference.md)
+
+### 🧠 Intelligence Layer
+- [🧠 AI Risk Model](./docs/ai-risk-model.md)
+- [🚨 Fraud Detection](./docs/fraud-detection.md)
+
+### ✨ Product Details
+- [✨ Product Features](./docs/product-features.md)
 
 ---
 
@@ -99,252 +126,61 @@ Together these components form a system where **income protection becomes automa
 
 ---
 
-## 5. Technology Stack
+## 5. Key Features
 
-The platform uses a modular architecture combining backend services, geospatial databases, external data integrations, and automated claim processing systems.
+The platform is designed to provide **real-time income protection for gig workers** through intelligent automation.
 
-The goal of the technology stack is to support **real-time disruption monitoring, automated parametric payouts, and scalable gig worker coverage.**
+- **📅 Weekly Coverage Model**  
+  Short-term insurance aligned with gig earning cycles  
 
+- **📊 Expected Earnings Predictor**  
+  Estimates worker income based on activity patterns  
+
+- **📉 Income Drop Detection**  
+  Identifies sudden earning disruptions  
+
+- **🗺️ Local Risk Heatmap**  
+  Visualizes high-risk delivery zones  
+
+- **💰 Dynamic Premium Pricing**  
+  Adjusts pricing based on zone risk score  
+
+- **⚡ Smart Claim Automation**  
+  Automatically triggers payouts during disruptions  
+
+- **📈 Income Protection Tracker**  
+  Displays protected vs lost income in real-time  
 ---
 
-### Backend Services
+## 6. Risk & Premium Model
 
-The backend layer manages the core system logic including policy management, disruption detection, claim automation, and fraud detection.
+The platform uses a **short-term, subscription-based model** aligned with gig workers’ daily earnings.
 
-Technologies used:
+Workers opt for **weekly coverage**, making it:
+- affordable  
+- flexible  
+- suited to their income cycle  
 
-- **Python** – primary backend language used for system logic and risk calculations.
-- **FastAPI** – modern high-performance API framework used to build REST APIs.
-- **Celery / Background Workers** – handles asynchronous tasks such as disruption monitoring and claim evaluation.
-- **Redis** – message broker for background job queues.
+Each worker is assigned a **risk score** based on:
 
-Backend services are responsible for:
+- weather conditions  
+- AQI levels  
+- traffic congestion  
+- historical disruptions  
 
-- worker authentication
-- policy lifecycle management
-- disruption detection
-- automated claim generation
-- payout calculation
-- fraud validation
+Based on this, workers fall into tiers:
 
----
-
-### Database Layer
-
-The platform uses a relational database designed for geospatial data processing.
-
-Technologies used:
-
-- **PostgreSQL** – primary relational database.
-- **PostGIS** – geospatial extension for PostgreSQL.
-
-PostGIS enables advanced spatial queries such as:
-
-- identifying workers inside disruption zones
-- validating worker GPS coordinates
-- calculating geographic proximity between workers and disruption events
-
-Example spatial query:
-
-```
-ST_DWithin(worker_location, disruption_zone, 10000)
-```
-
-This query checks whether a worker is located within a **10 km disruption zone radius**.
-
----
-
-### Risk Intelligence Engine
-
-The risk intelligence engine analyzes environmental signals to determine disruption probability and worker risk scores.
-
-Technologies used:
-
-- **Python data processing modules**
-- **rule-based scoring models**
-- optional **machine learning extensions**
-
-Inputs analyzed by the engine include:
-
-- rainfall intensity
-- air quality index (AQI)
-- traffic congestion
-- historical disruption patterns
-
-These inputs generate a **zone risk score**, which determines the worker’s premium tier.
-
----
-
-### External Data APIs
-
-The platform relies on real-world data signals to detect disruptions affecting gig workers.
-
-External APIs include:
-
-| API | Purpose |
-|----|----|
-| **OpenWeatherMap API** | Detect rainfall, storms, and extreme temperatures |
-| **AQICN API** | Monitor air pollution levels |
-| **Google Maps Traffic API** | Detect traffic congestion and mobility slowdowns |
-| **Razorpay Sandbox API** | Simulate worker payout transactions |
-
-During development and hackathon demonstrations, these APIs can be **mocked to simulate disruption events**.
-
----
-
-### Fraud Detection Module
-
-The fraud detection system ensures automated payouts remain secure.
-
-Technologies used:
-
-- **PostGIS spatial validation** for location verification
-- **rule-based anomaly detection**
-- **worker trust score system**
-
-Fraud checks include:
-
-- GPS validation within disruption zones
-- duplicate claim detection
-- abnormal claim frequency detection
-- trust score evaluation
-
----
-
-### Frontend Interfaces
-
-Two primary user interfaces interact with the platform.
-
-**Worker Mobile Application**
-
-Allows workers to:
-
-- register and authenticate
-- activate weekly insurance coverage
-- monitor disruption alerts
-- track claims and payouts
-- view income protection status
-
-Possible technologies:
-
-- React Native (mobile framework)
-- REST API integration with backend services
-
-**Admin Dashboard**
-
-Provides administrative control and analytics including:
-
-- disruption monitoring
-- claim tracking
-- payout analytics
-- fraud alerts
-
-Possible technologies:
-
-- React / Next.js
-- data visualization libraries
-
----
-
-### Security & Authentication
-
-Security measures ensure safe access to the platform.
-
-Technologies used:
-
-- **JWT Authentication** for secure API access
-- **OTP login verification** for worker authentication
-- **Role-based access control** for admin operations
-- **API request validation**
-
-These mechanisms protect both worker data and financial transactions.
-
----
-
-### DevOps & Deployment (Prototype)
-
-For hackathon demonstration purposes, the platform can be deployed using lightweight cloud infrastructure.
-
-Possible deployment tools include:
-
-- **Docker** – containerized backend deployment
-- **AWS / Render / Railway** – backend hosting
-- **GitHub** – version control and documentation
-- **Cloud database hosting (Supabase / AWS RDS)**
-
-This infrastructure allows the system to scale as the number of workers and disruption events increases.
----
-
-## 6. Key Features
-
-The system introduces features designed specifically for gig worker income protection.
-
-### Shift-Based / Weekly Coverage
-
-Workers activate short-term insurance aligned with their working cycle.
-
-### Expected Earnings Predictor
-
-Estimates potential income based on working hours and historical activity.
-
-### Income Drop Detector
-
-Detects sudden earning drops during disruptions.
-
-### Local Risk Heatmap
-
-Displays disruption risk across delivery zones.
-
-### Dynamic Premium Pricing
-
-Premiums adjust based on zone risk level.
-
-### Smart Claim Automation
-
-Claims are triggered automatically when disruption thresholds are reached.
-
-### Worker Trust Score
-
-Maintains credibility metrics for each worker.
-
-### Fraud Detection Mechanisms
-
-Detects suspicious activity patterns.
-
-### Income Protection Meter
-
-Shows workers how much income has been protected.
-
-### Emergency Payout Trigger
-
-Allows instant payouts during severe disruptions.
-
----
-
-## 7. Risk & Premium Model
-
-Insurance coverage is based on a **risk scoring system**.
-
-The system analyzes:
-
-- weather patterns
-- pollution levels
-- traffic congestion
-- historical disruptions
-
-### Risk Score Model
-
-| Risk Score | Coverage Tier | Weekly Premium |
+| Risk Level | Coverage Tier | Weekly Premium |
 |------------|--------------|---------------|
-| Low Risk | Basic | ₹15 |
-| Medium Risk | Standard | ₹25 |
-| High Risk | Extended | ₹35 |
+| Low Risk   | Basic        | ₹15           |
+| Medium Risk| Standard     | ₹25           |
+| High Risk  | Extended     | ₹35           |
 
-Higher-risk zones offer **greater coverage limits**.
+Higher-risk zones offer **higher coverage limits** for fair compensation.
 
 ---
 
-## 8. Parametric Claim Automation
+## 7. Parametric Claim Automation
 
 The system monitors disruption indicators such as:
 
@@ -355,12 +191,13 @@ The system monitors disruption indicators such as:
 
 When a disruption occurs the system executes:
 
-1. Detect disruption event.
-2. Identify active policies in the affected zone.
-3. Verify worker eligibility.
-4. Calculate payout based on hourly earnings.
-5. Record payout and update claim history.
+1. Detect disruption event  
+2. Identify affected workers  
+3. Run fraud validation  
+4. Calculate income loss  
+5. Generate claim & process payout
 
+   
 ### Automated Claim Processing Flow
 
 ```mermaid
@@ -393,33 +230,32 @@ K --> L[Update Worker Dashboard]
 
 ---
 
-## 9. Fraud Detection
+## 8. Fraud Detection
 
-The system includes several safeguards.
+The platform ensures secure payouts through multiple validation layers:
 
-### GPS Location Verification
+- GPS location verification  
+- duplicate claim prevention  
+- delivery activity validation  
+- behavioral anomaly detection  
+- worker trust scoring
+  
+---
 
-Ensures the worker was inside the affected zone.
+## 🚨 Adversarial Defense & Anti-Spoofing Strategy  (Market Crash Response)
 
-### Duplicate Claim Prevention
+To counter advanced GPS spoofing attacks and coordinated fraud rings, our platform uses a **multi-layered verification system beyond basic location checks**.
 
-Prevents multiple claims for the same disruption.
+- **Behavioral Analysis:** Detects real movement patterns vs spoofed/static signals  
+- **Multi-Signal Validation:** Combines GPS, device, and network intelligence  
+- **Fraud Ring Detection:** Identifies clustered and synchronized claim activity  
+- **Fair UX Handling:** Flags suspicious claims without penalizing genuine workers  
 
-### Delivery Activity Validation
-
-Confirms the worker was active during the disruption.
-
-### Behavioral Anomaly Detection
-
-Detects unusual activity patterns.
-
-### Worker Trust Score
-
-Adjusts system confidence based on worker reliability.
+👉 [View Detailed Anti-Spoofing Strategy](./docs/anti-spoofing.md)
 
 ---
 
-## 10. System Architecture
+## 9. System Architecture
 
 The system architecture consists of three layers.
 
@@ -479,7 +315,7 @@ F --> M[Trust Score Engine]
 
 ---
 
-## 11. Demo Flow
+## 10. Demo Flow
 
 The demonstration scenario shows the full workflow.
 
@@ -492,21 +328,9 @@ The demonstration scenario shows the full workflow.
 7. Payout is calculated automatically.
 8. Worker dashboard updates with claim record.
 
-### What This Demonstrates
-
-The complete automated insurance cycle:
-
-1. Worker activates coverage  
-2. System monitors disruption signals  
-3. Disruption occurs  
-4. Eligible workers identified  
-5. Fraud checks executed  
-6. Payout calculated  
-7. Worker receives automated update
-
 ---
 
-## 12. End-to-End System Workflow
+## 11. End-to-End System Workflow
 
 The diagram below illustrates the full lifecycle of the platform — from worker onboarding to automated disruption payouts.
 
@@ -563,3 +387,122 @@ W --> X[Update Worker Dashboard]
 
 X --> Y[Notify Worker of Compensation]
 ```
+---
+## 12. Technology Stack
+
+Our platform uses a modular architecture designed for **real-time disruption detection, automated claim processing, and scalable deployment**.
+
+### Platform Choice: Web + Mobile (Hybrid)
+
+The platform uses a **web-first approach with mobile accessibility**.
+
+- Core system built as a web application  
+- Delivered via a mobile-friendly interface  
+
+**Why this approach?**
+- Faster development during hackathon  
+- Single codebase, lower complexity  
+- Easy deployment and scalability  
+
+Designed for mobile usage since gig workers primarily operate via smartphones.
+
+### 📱 Frontend Interfaces
+Tech:
+- React / Next.js  
+- Android Studio (WebView wrapper)  
+- REST API integration  
+
+---
+
+### 🧩 Backend & Processing
+
+- **Python + FastAPI**  
+  Core backend framework handling APIs, policy lifecycle, and claim automation  
+
+- **Celery + Redis**  
+  Asynchronous processing for:
+  - disruption monitoring  
+  - bulk claim evaluation  
+  - payout processing  
+
+---
+
+### 🗂️ Data & Geospatial Layer
+
+- **PostgreSQL**  
+  Stores workers, policies, and claims data  
+
+- **PostGIS**  
+  Enables geospatial intelligence:
+  - worker location validation  
+  - disruption zone mapping  
+  - proximity queries  
+
+Example: ST_DWithin(worker_location, disruption_zone, 10000)
+
+---
+
+### 🧠 Risk Intelligence Engine
+
+- Processes environmental and historical data:
+  - rainfall intensity  
+  - AQI levels  
+  - traffic congestion  
+
+- Generates **zone risk scores** used for:
+  - premium calculation  
+  - disruption detection  
+
+- Built using:
+  - rule-based models (MVP)  
+  - extensible ML pipeline (future-ready)  
+
+---
+
+### 🌐 External Integrations
+
+| Service | Purpose |
+|--------|--------|
+| OpenWeatherMap | Weather & rainfall detection |
+| AQICN API | Air quality monitoring |
+| Google Maps API | Traffic congestion analysis |
+| Razorpay Sandbox | Simulated payout processing |
+
+---
+
+### 🛡️ Fraud & Trust Layer
+
+- **Geo-spatial validation (PostGIS)**  
+- **Behavioral anomaly detection**  
+- **Worker trust score system**  
+
+Supports:
+- duplicate claim detection  
+- abnormal activity tracking  
+- coordinated fraud identification  
+
+---
+
+**Admin Dashboard (Web Application)**
+
+- Built using React / Next.js  
+- Provides analytics, monitoring, and disruption simulation  
+
+---
+
+### 🔐 Security & Authentication
+
+- JWT-based authentication  
+- OTP login for workers  
+- Role-based access control  
+- API validation & request security  
+
+---
+
+### 🚀 Deployment & DevOps
+
+- Docker (containerized backend)  
+- Cloud hosting (AWS / Render / Railway)  
+- PostgreSQL hosting (Supabase / AWS RDS)  
+- GitHub for version control  
+---

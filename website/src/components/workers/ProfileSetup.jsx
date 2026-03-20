@@ -266,7 +266,7 @@ const ProfileSetup = () => {
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Trust Score</h3>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-gray-600 mb-2">Your credibility score with GigGuard</p>
+            <p className="text-gray-600 mb-2">Your credibility score with AegisAI: Smart Gig Insurance Platform</p>
             <div className="flex items-center gap-4">
               <div className="text-4xl font-bold text-yellow-500">{worker?.trustScore}%</div>
               <div className="text-gray-600">

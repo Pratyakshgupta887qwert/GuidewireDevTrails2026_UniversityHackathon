@@ -108,10 +108,10 @@ export const disruptions = [
 ];
 
 export const workers = [
-  { id: 'W-2026-118', name: 'Ananya Verma', zone: 'South Delhi', trust: 94, claims: 4, status: 'Active', phone: '+91 98888 11001', email: 'ananya@gigguard.app' },
-  { id: 'W-2026-119', name: 'Rohit Dabas', zone: 'West Delhi', trust: 79, claims: 7, status: 'Flagged', phone: '+91 98888 11002', email: 'rohit@gigguard.app' },
-  { id: 'W-2026-120', name: 'Farah Khan', zone: 'North Delhi', trust: 88, claims: 3, status: 'Active', phone: '+91 98888 11003', email: 'farah@gigguard.app' },
-  { id: 'W-2026-121', name: 'Ishan Goyal', zone: 'East Delhi', trust: 43, claims: 9, status: 'Suspended', phone: '+91 98888 11004', email: 'ishan@gigguard.app' },
+  { id: 'W-2026-118', name: 'Ananya Verma', zone: 'South Delhi', trust: 94, claims: 4, status: 'Active', phone: '+91 98888 11001', email: 'ananya@aegisai.app' },
+  { id: 'W-2026-119', name: 'Rohit Dabas', zone: 'West Delhi', trust: 79, claims: 7, status: 'Flagged', phone: '+91 98888 11002', email: 'rohit@aegisai.app' },
+  { id: 'W-2026-120', name: 'Farah Khan', zone: 'North Delhi', trust: 88, claims: 3, status: 'Active', phone: '+91 98888 11003', email: 'farah@aegisai.app' },
+  { id: 'W-2026-121', name: 'Ishan Goyal', zone: 'East Delhi', trust: 43, claims: 9, status: 'Suspended', phone: '+91 98888 11004', email: 'ishan@aegisai.app' },
 ];
 
 export const fraudAlerts = [

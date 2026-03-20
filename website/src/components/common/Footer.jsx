@@ -11,7 +11,7 @@ const Footer = () => {
               <div className="rounded-lg bg-gradient-to-br from-primary-600 to-secondary-600 p-2">
                 <span className="text-xl">🛡️</span>
               </div>
-              <span className="text-xl font-bold text-white">GigGuard</span>
+              <span className="text-xl font-bold text-white">AegisAI: Smart Gig Insurance Platform</span>
             </div>
             <p className="text-sm leading-6 text-slate-400">
               Smart parametric income insurance platform for India&apos;s gig workers with instant, data-driven payouts.
@@ -75,8 +75,8 @@ const Footer = () => {
             <h3 className="text-white font-semibold mb-4">Trust & Contact</h3>
             <ul className="space-y-2 text-sm">
               <li>IRDAI Compliant Framework</li>
-              <li>Email: support@gigguard.in</li>
-              <li>Helpline: +91 1800-GIGGUARD</li>
+              <li>Email: support@aegisai.in</li>
+              <li>Helpline: +91 1800-AEGISAI</li>
               <li>HQ: New Delhi, India</li>
             </ul>
           </div>
@@ -85,7 +85,7 @@ const Footer = () => {
         <div className="border-t border-slate-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm">
-              © 2026 GigGuard. All rights reserved.
+              © 2026 AegisAI: Smart Gig Insurance Platform. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm">
               <a href="#privacy" className="hover:text-white transition">

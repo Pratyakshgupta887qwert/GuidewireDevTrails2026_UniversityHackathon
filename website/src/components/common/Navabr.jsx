@@ -35,7 +35,7 @@ const Navbar = ({ isDashboard = false }) => {
               🛡️
             </div>
             <div>
-              <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">GigGuard</span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">AegisAI: Smart Gig Insurance Platform</span>
               <p className="text-xs text-slate-500 dark:text-slate-300">Smart Parametric Insurance</p>
             </div>
           </Link>
