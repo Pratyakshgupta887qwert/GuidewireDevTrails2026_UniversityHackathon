@@ -154,24 +154,29 @@ The platform is designed to provide **real-time income protection for gig worker
 
 ## 6. Risk & Premium Model
 
-Insurance coverage is based on a **risk scoring system**.
+The platform uses a **short-term, subscription-based model** aligned with gig workers’ daily earnings.
 
-The system analyzes:
+Workers opt for **weekly coverage**, making it:
+- affordable  
+- flexible  
+- suited to their income cycle  
 
-- weather patterns
-- pollution levels
-- traffic congestion
-- historical disruptions
+Each worker is assigned a **risk score** based on:
 
-### Risk Score Model
+- weather conditions  
+- AQI levels  
+- traffic congestion  
+- historical disruptions  
 
-| Risk Score | Coverage Tier | Weekly Premium |
+Based on this, workers fall into tiers:
+
+| Risk Level | Coverage Tier | Weekly Premium |
 |------------|--------------|---------------|
-| Low Risk | Basic | ₹15 |
-| Medium Risk | Standard | ₹25 |
-| High Risk | Extended | ₹35 |
+| Low Risk   | Basic        | ₹15           |
+| Medium Risk| Standard     | ₹25           |
+| High Risk  | Extended     | ₹35           |
 
-Higher-risk zones offer **greater coverage limits**.
+Higher-risk zones offer **higher coverage limits** for fair compensation.
 
 ---
 
@@ -387,6 +392,26 @@ X --> Y[Notify Worker of Compensation]
 
 Our platform uses a modular architecture designed for **real-time disruption detection, automated claim processing, and scalable deployment**.
 
+### Platform Choice: Web + Mobile (Hybrid)
+
+The platform uses a **web-first approach with mobile accessibility**.
+
+- Core system built as a web application  
+- Delivered via a mobile-friendly interface  
+
+**Why this approach?**
+- Faster development during hackathon  
+- Single codebase, lower complexity  
+- Easy deployment and scalability  
+
+Designed for mobile usage since gig workers primarily operate via smartphones.
+
+### 📱 Frontend Interfaces
+Tech:
+- React / Next.js  
+- Android Studio (WebView wrapper)  
+- REST API integration  
+
 ---
 
 ### 🧩 Backend & Processing
@@ -455,21 +480,6 @@ Supports:
 - duplicate claim detection  
 - abnormal activity tracking  
 - coordinated fraud identification  
-
----
-
-### 📱 Frontend Interfaces
-
-**Worker Application (WebView-Based Mobile App)**
-
-- Web app wrapped using **Android WebView**
-- Enables rapid development + Play Store deployment  
-- Ensures consistent UI across devices  
-
-Tech:
-- React / Next.js  
-- Android Studio (WebView wrapper)  
-- REST API integration  
 
 ---
 
