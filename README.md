@@ -60,7 +60,7 @@ For deeper technical insights into our system design and implementation:
 - [🔗 API Reference](./docs/api-reference.md)
 
 ### 🧠 Intelligence Layer
-- [🧠 AI Risk Model](./docs/ai-risk.md)
+- [🧠 AI Risk Model](./docs/ai-risk-model.md)
 - [🚨 Fraud Detection](./docs/fraud-detection.md)
 
 ### ✨ Product Details
