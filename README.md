@@ -1,4 +1,4 @@
-# Smart Gig Insurance Platform
+# AegisAI : Smart Gig Insurance Platform
 ## AI-Powered Parametric Income Protection for Delivery Workers
 
 ---
