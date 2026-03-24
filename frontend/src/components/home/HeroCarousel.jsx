@@ -9,7 +9,7 @@ export default function HeroCarousel() {
         <p>
           Get automatic compensation when weather, AQI, or mobility disruptions reduce your earning hours.
         </p>
-        <ActionButton>Activate Coverage</ActionButton>
+        <ActionButton to="/policies">Activate Coverage</ActionButton>
       </div>
       <img
         src="/ui/WhatsApp Image 2026-03-24 at 2.10.55 PM.jpeg"

@@ -1,6 +1,35 @@
+import { useEffect, useState } from "react";
 import { worker } from "../../data/mockData";
+import { useNavigate } from "react-router-dom";
+import { getWorkerApi } from "../../services/backendApi";
 
 export default function TopHeader() {
+  const navigate = useNavigate();
+  const [workerData, setWorkerData] = useState(worker);
+
+  useEffect(() => {
+    let active = true;
+
+    getWorkerApi()
+      .then((data) => {
+        if (!active) return;
+        setWorkerData({
+          name: data.name,
+          greeting: data.greeting,
+          city: data.city,
+          planName: data.plan_name,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setWorkerData(worker);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-20 flex h-[88px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-6">
       <div className="flex items-center gap-3.5">
@@ -8,13 +37,14 @@ export default function TopHeader() {
           RR
         </div>
         <div>
-          <p className="m-0 text-base font-bold text-slate-900 md:text-lg">Hi! {worker.name}</p>
-          <p className="m-0 mt-0.5 text-sm text-slate-500">{worker.greeting}</p>
+          <p className="m-0 text-base font-bold text-slate-900 md:text-lg">Hi! {workerData.name}</p>
+          <p className="m-0 mt-0.5 text-sm text-slate-500">{workerData.greeting}</p>
         </div>
       </div>
       <button
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-semibold text-indigo-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50"
         aria-label="Support"
+        onClick={() => navigate("/discover")}
       >
         ?
       </button>

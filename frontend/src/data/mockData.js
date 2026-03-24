@@ -73,6 +73,26 @@ export const riskMonitor = {
   activeSignals: ["Rainfall Intensity", "AQI Level", "Traffic Congestion"],
 };
 
+export const payoutRules = [
+  "If rainfall exceeds threshold for 90+ minutes, payout engine is triggered.",
+  "Only workers with active weekly policy during event window are eligible.",
+  "Fraud checks include location integrity, delivery activity, and duplicate claim scan.",
+  "Approved compensation is transferred automatically without manual claim filing.",
+];
+
+export const riskZones = [
+  { zone: "Dwarka Zone 3", risk: "High", trigger: "Heavy Rain" },
+  { zone: "Saket Zone 1", risk: "Elevated", trigger: "Traffic Gridlock" },
+  { zone: "Noida Sector 62", risk: "Moderate", trigger: "AQI Spike" },
+];
+
+export const validationChecks = [
+  "GPS path continuity verified",
+  "Delivery activity matched with event timeline",
+  "Device trust fingerprint valid",
+  "No duplicate payout request detected",
+];
+
 export const articles = [
   {
     id: "art-1",

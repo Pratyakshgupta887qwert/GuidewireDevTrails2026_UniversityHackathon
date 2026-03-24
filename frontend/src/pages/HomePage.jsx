@@ -1,9 +1,33 @@
+import { useEffect, useState } from "react";
 import SectionCard from "../components/common/SectionCard";
 import HeroCarousel from "../components/home/HeroCarousel";
 import ServicesGrid from "../components/home/ServicesGrid";
 import { services, worker } from "../data/mockData";
+import { calculateDisruptionRisk, DEFAULT_COORDS, getLiveRiskSignals } from "../services/publicApis";
 
 export default function HomePage() {
+  const [risk, setRisk] = useState(62);
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    getLiveRiskSignals(DEFAULT_COORDS)
+      .then((signals) => {
+        if (!active) return;
+        setRisk(calculateDisruptionRisk(signals));
+        setIsLive(true);
+      })
+      .catch(() => {
+        if (!active) return;
+        setIsLive(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="page-stack">
       <HeroCarousel />
@@ -15,10 +39,12 @@ export default function HomePage() {
         <div className="meter">
           <div className="meter__head">
             <h3>{worker.planName}</h3>
-            <span>Risk Zone: {worker.city}</span>
+            <span>
+              Risk Zone: {worker.city} {isLive ? "(Live API)" : "(Fallback)"}
+            </span>
           </div>
           <div className="meter__track">
-            <span style={{ width: "62%" }} />
+            <span style={{ width: `${risk}%` }} />
           </div>
           <div className="meter__legend">
             <div>
