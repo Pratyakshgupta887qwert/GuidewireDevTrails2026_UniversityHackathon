@@ -8,7 +8,7 @@ export default function ClaimsPage() {
       <SectionCard
         title="My Claims"
         subtitle="Auto-generated claims from verified disruption events"
-        rightSlot={<ActionButton variant="secondary">+ Register</ActionButton>}
+        rightSlot={<ActionButton variant="secondary">View Payout Rules</ActionButton>}
       >
         {claimHistory.length === 0 ? (
           <div className="empty-state">

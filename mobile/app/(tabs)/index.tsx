@@ -1,98 +1,165 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import Constants from 'expo-constants';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+function resolveWebAppUrl() {
+  const configuredUrl = process.env.EXPO_PUBLIC_WEB_URL?.trim();
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  const configuredPort = process.env.EXPO_PUBLIC_WEB_PORT?.trim() || '5173';
+
+  const hostUri = Constants.expoConfig?.hostUri;
+  const host = hostUri?.split(':')[0];
+  if (host) {
+    return `http://${host}:${configuredPort}`;
+  }
+
+  if (Platform.OS === 'android') {
+    return `http://10.0.2.2:${configuredPort}`;
+  }
+
+  return `http://localhost:${configuredPort}`;
+}
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const webAppUrl = useMemo(() => resolveWebAppUrl(), []);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  if (Platform.OS === 'web') {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+        <View style={styles.header}>
+          <Text style={styles.title}>AegisAI Mobile</Text>
+          <Text style={styles.url}>{webAppUrl}</Text>
+        </View>
+        <View style={styles.errorWrap}>
+          <Text style={styles.errorTitle}>Expo Web Limitation</Text>
+          <Text style={styles.errorText}>React Native WebView does not run inside Expo web preview.</Text>
+          <Text style={styles.errorHint}>Use Expo Go on phone for native wrapper, or open the web app directly on laptop.</Text>
+          <Pressable style={styles.button} onPress={() => Linking.openURL(webAppUrl)}>
+            <Text style={styles.buttonText}>Open Web App in Browser</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={styles.header}>
+        <Text style={styles.title}>AegisAI Mobile</Text>
+        <Text style={styles.url}>{webAppUrl}</Text>
+      </View>
+
+      {loadError ? (
+        <View style={styles.errorWrap}>
+          <Text style={styles.errorTitle}>Could not open web app</Text>
+          <Text style={styles.errorText}>{loadError}</Text>
+          <Text style={styles.errorHint}>
+            Make sure frontend is running on port 5173 (or your configured port) and your phone is on the same network.
+          </Text>
+          <Pressable style={styles.button} onPress={() => { setLoadError(null); setReloadCount((v) => v + 1); }}>
+            <Text style={styles.buttonText}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <WebView
+          key={`${webAppUrl}-${reloadCount}`}
+          source={{ uri: webAppUrl }}
+          originWhitelist={['*']}
+          startInLoadingState
+          javaScriptEnabled
+          domStorageEnabled
+          setSupportMultipleWindows={false}
+          renderLoading={() => (
+            <View style={styles.loaderWrap}>
+              <ActivityIndicator size="large" color="#3147a6" />
+              <Text style={styles.loaderText}>Loading AegisAI...</Text>
+            </View>
+          )}
+          onError={(event) => {
+            setLoadError(event.nativeEvent.description || 'Network error while loading web app.');
+          }}
+          onHttpError={(event) => {
+            setLoadError(`HTTP ${event.nativeEvent.statusCode} while loading web app.`);
+          }}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  screen: {
+    flex: 1,
+    backgroundColor: '#f1f4fb',
+  },
+  header: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d9e0f2',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  title: {
+    color: '#162765',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  url: {
+    color: '#5f6a8a',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  loaderWrap: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loaderText: {
+    color: '#3a4770',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 22,
     gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  errorTitle: {
+    color: '#14204e',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  errorText: {
+    color: '#53608b',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  errorHint: {
+    color: '#6476ad',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  button: {
+    marginTop: 10,
+    backgroundColor: '#3147a6',
+    borderRadius: 10,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

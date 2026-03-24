@@ -1,50 +1,44 @@
-# Welcome to your Expo app 👋
+# AegisAI Mobile (Expo + WebView)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This mobile app is a WebView wrapper for the frontend web app.
 
-## Get started
+## Run with Expo Go
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+1. Install mobile dependencies:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Start the frontend web app (in `frontend`):
 
-## Learn more
+```bash
+npm run dev -- --host
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Set web app URL for mobile (in `mobile`):
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+$env:EXPO_PUBLIC_WEB_URL="http://<YOUR_LAPTOP_IP>:5173"
+```
 
-## Join the community
+Example:
 
-Join our community of developers creating universal apps.
+```bash
+$env:EXPO_PUBLIC_WEB_URL="http://192.168.1.10:5173"
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+4. Start Expo:
+
+```bash
+npx expo start
+```
+
+5. Scan QR in Expo Go and open app.
+
+## Notes
+
+- Phone and laptop must be on same Wi-Fi.
+- If `EXPO_PUBLIC_WEB_URL` is not set, app tries to auto-detect host from Expo and fallback URLs.
+- Default web app port expected by mobile wrapper: `5173`.
+- Optional: set `EXPO_PUBLIC_WEB_PORT` if your frontend runs on a different port.

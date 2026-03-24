@@ -7,21 +7,21 @@ export const worker = {
 };
 
 export const services = [
-  "Risk Heatmap",
-  "Policy Upgrade",
-  "Fraud Alerts",
-  "Payout Status",
-  "Income Analytics",
-  "Support",
+  "Weekly Coverage Plans",
+  "Expected Earnings Predictor",
+  "Income Drop Detection",
+  "Local Risk Heatmap",
+  "Fraud Shield Alerts",
+  "Instant Payout Tracking",
 ];
 
 export const discoverProducts = [
-  "Weekly Basic Cover",
-  "Standard Disruption Cover",
-  "Extended High-Risk Cover",
-  "Accident Add-on",
-  "Medical Add-on",
-  "Emergency Assistance",
+  "Basic Weekly Cover - Rs 15",
+  "Standard Weekly Cover - Rs 25",
+  "Extended Weekly Cover - Rs 35",
+  "Monsoon Surge Protection",
+  "AQI Spike Protection",
+  "Traffic Paralysis Protection",
 ];
 
 export const policies = [
@@ -66,11 +66,11 @@ export const claimHistory = [
   },
 ];
 
-export const wellnessStats = {
-  score: 62,
-  target: 100,
-  hydrationGoalMl: 2000,
-  hydrationDoneMl: 900,
+export const riskMonitor = {
+  zone: "Delhi NCR",
+  disruptionProbability: 62,
+  trustScore: 91,
+  activeSignals: ["Rainfall Intensity", "AQI Level", "Traffic Congestion"],
 };
 
 export const articles = [
