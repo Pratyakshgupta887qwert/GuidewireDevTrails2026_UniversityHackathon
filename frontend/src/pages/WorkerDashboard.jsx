@@ -11,7 +11,7 @@ import PayoutHistory from './PayoutHistory';
 import SettingsPage from './Settings';
 import NotificationsPage from './Notifications';
 
-const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab, onLogout }) => {
+const WorkerDashboard = ({ user, setUser, isDisrupted, rainLevel, activeTab, setActiveTab, onLogout }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
 
@@ -182,7 +182,7 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab
                      </div>
                      <div className={`backdrop-blur-md px-4 py-2 rounded-xl border ${isDisrupted ? 'bg-rose-500/10 border-rose-500/20' : 'bg-slate-800/50 border-slate-700/50'}`}>
                         <p className="text-[10px] font-bold opacity-80 uppercase text-slate-400">Current Zone</p>
-                        <p className={`text-xl font-black ${isDisrupted ? 'text-rose-400' : 'text-blue-400'}`}>{user.zone.split('-')[1]}</p>
+                        <p className={`text-xl font-black ${isDisrupted ? 'text-rose-400' : 'text-blue-400'}`}>{user.zone}</p>
                      </div>
                   </div>
                </div>
@@ -263,7 +263,7 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab
 
           {activeTab === 'notifications' && <NotificationsPage />}
 
-          {activeTab === 'settings' && <SettingsPage user={user} />}
+          {activeTab === 'settings' && <SettingsPage user={user} setUser={setUser} />}
 
         </main>
       </div>

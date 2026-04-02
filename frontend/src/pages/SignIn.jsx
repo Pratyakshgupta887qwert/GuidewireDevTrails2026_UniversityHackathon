@@ -4,15 +4,34 @@ import { ShieldCheck, Phone, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 
 const SignIn = ({ onLogin, onNavigateToSignUp }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API delay for "High-Tech" feel
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:8000/api/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      onLogin(data.user);
+    } catch(err) {
+      setError(err.message);
+    } finally {
       setIsLoading(false);
-      onLogin();
-    }, 1500);
+    }
   };
 
   return (
@@ -42,6 +61,8 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
               <input 
                 required
                 type="tel" 
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 placeholder="98765 43210"
                 className="w-full pl-12 pr-4 py-4 bg-slate-900/50 border-2 border-slate-700 rounded-2xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600 placeholder:font-normal"
               />
@@ -61,6 +82,8 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
               <input 
                 required
                 type={showPassword ? "text" : "password"} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full pl-12 pr-12 py-4 bg-slate-900/50 border-2 border-slate-700 rounded-2xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600"
               />
@@ -79,6 +102,12 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
             <input type="checkbox" id="remember" className="w-5 h-5 rounded border-2 border-slate-700 bg-slate-900/50 text-blue-500 focus:ring-blue-500/50 cursor-pointer" />
             <label htmlFor="remember" className="text-sm font-bold text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">Stay protected for 30 days</label>
           </div>
+
+          {error && (
+            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center">
+              {error}
+            </div>
+          )}
 
           {/* Submit Button */}
           <button 
