@@ -5,7 +5,9 @@ import SignUp from './pages/SignUp';
 import WorkerDashboard from './pages/WorkerDashboard';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('landing');
+  const [currentPage, setCurrentPage] = useState(() => {
+    return localStorage.getItem('aegis_current_page') || 'landing';
+  });
   
   // NEW: This state controls the sidebar navigation inside the Dashboard
   const [activeTab, setActiveTab] = useState('overview'); 
@@ -23,6 +25,7 @@ function App() {
   const navigateTo = (page) => {
     window.scrollTo(0, 0);
     setCurrentPage(page);
+    localStorage.setItem('aegis_current_page', page);
   };
 
   const renderPage = () => {
