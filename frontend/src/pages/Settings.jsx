@@ -1,24 +1,45 @@
 import React, { useState } from 'react';
 import { User, Shield, CreditCard, Bell, Map, ChevronRight, ChevronDown, Camera, CheckCircle2, Save } from 'lucide-react';
 
-const Settings = ({ user }) => {
+const Settings = ({ user, setUser }) => {
   const [activeEditId, setActiveEditId] = useState(null);
   const [showToast, setShowToast] = useState(false);
 
   // States for form fields
   const [formData, setFormData] = useState({
-    name: user.name || "Rahul Kumar",
-    phone: "+91 98765 43210",
-    address: "B-42, Sector 62, Noida, UP",
-    upiId: "rahul@upi",
-    zone: "Sector 62, Noida"
+    name: user.name || "Unknown",
+    phone: user.phone || "+91 00000 00000",
+    address: "B-42, Sector 62, Noida, UP", // Placeholder until DB has address
+    upiId: user.upi_id || "unlinked",
+    zone: user.zone || "Unassigned"
   });
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    setActiveEditId(null);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    try {
+      const response = await fetch('http://localhost:8000/api/update-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: user.phone, // Needed by DB to identify user
+          name: formData.name,
+          zone: formData.zone,
+          upi_id: formData.upiId
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const updatedSession = { ...user, ...data.user, balance: user.balance, isProtected: user.isProtected };
+        if (setUser) setUser(updatedSession);
+        localStorage.setItem('aegis_user_data', JSON.stringify(updatedSession));
+        
+        setActiveEditId(null);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleChange = (e) => {
@@ -184,23 +205,20 @@ const Settings = ({ user }) => {
             icon={<Map size={20} />} 
             title="Operating Zone" 
             desc={`Currently assigned to: ${formData.zone}`}
+            status="Locked"
           >
-            <form onSubmit={handleSave} className="space-y-4 mt-4 pt-4 border-t border-slate-800">
+            <div className="space-y-4 mt-4 pt-4 border-t border-slate-800">
                <div>
-                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Preferred Zone</label>
-                 <select name="zone" value={formData.zone} onChange={handleChange} className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-inner appearance-none cursor-pointer">
-                    <option className="bg-slate-900 text-slate-200">Sector 62, Noida</option>
-                    <option className="bg-slate-900 text-slate-200">Connaught Place, Delhi</option>
-                    <option className="bg-slate-900 text-slate-200">Cyber Hub, Gurgaon</option>
-                    <option className="bg-slate-900 text-slate-200">Indiranagar, Bangalore</option>
+                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-2">Assigned Zone</label>
+                 <select disabled name="zone" value={formData.zone} className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-500 focus:outline-none transition-all shadow-inner appearance-none cursor-not-allowed">
+                    <option value="Sector 62, Noida" className="bg-slate-900">Sector 62, Noida</option>
+                    <option value="Connaught Place, Delhi" className="bg-slate-900">Connaught Place, Delhi</option>
+                    <option value="Cyber Hub, Gurgaon" className="bg-slate-900">Cyber Hub, Gurgaon</option>
+                    <option value="Indiranagar, Bangalore" className="bg-slate-900">Indiranagar, Bangalore</option>
                  </select>
+                 <p className="text-xs mt-3 text-rose-400 font-bold">* Zone transfers represent a high-risk change and are currently locked by the administration protocol.</p>
                </div>
-               <div className="flex justify-end pt-2">
-                 <button type="submit" className="bg-gradient-to-r from-blue-600 to-indigo-600 border border-blue-500/30 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                   <Save size={18} /> Update Zone
-                 </button>
-               </div>
-            </form>
+            </div>
           </SettingsItem>
         </div>
       </div>

@@ -6,7 +6,8 @@ import WorkerDashboard from './pages/WorkerDashboard';
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
-    return localStorage.getItem('aegis_current_page') || 'landing';
+    const saved = localStorage.getItem('aegis_current_page');
+    return saved === 'dashboard' ? 'dashboard' : 'landing';
   });
   
   // NEW: This state controls the sidebar navigation inside the Dashboard
@@ -15,11 +16,14 @@ function App() {
   const [isDisrupted, setIsDisrupted] = useState(false);
   const [rainLevel, setRainLevel] = useState(0);
 
-  const [user] = useState({
-    name: "Rahul Kumar",
-    zone: "New Delhi - Sector 62",
-    balance: 1250,
-    isProtected: true
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('aegis_user_data');
+    return saved ? JSON.parse(saved) : {
+      name: "Guest User",
+      zone: "Unknown",
+      balance: 0,
+      isProtected: false
+    };
   });
 
   const navigateTo = (page) => {
@@ -34,21 +38,40 @@ function App() {
         return <LandingPage onStart={() => navigateTo('signin')} />;
       
       case 'signin':
-        return <SignIn onLogin={() => navigateTo('dashboard')} onNavigateToSignUp={() => navigateTo('signup')} />;
+        return <SignIn 
+           onLogin={(userData) => {
+             const sessionUser = { 
+               ...userData, 
+               balance: 1250, 
+               isProtected: true,
+               zone: userData.zone || "Sector 62, Noida"
+             };
+             setUser(sessionUser);
+             localStorage.setItem('aegis_user_data', JSON.stringify(sessionUser));
+             navigateTo('dashboard');
+           }} 
+           onNavigateToSignUp={() => navigateTo('signup')} 
+        />;
       
       case 'signup':
-        return <SignUp onRegister={() => navigateTo('dashboard')} onNavigateToSignIn={() => navigateTo('signin')} />;
+        return <SignUp 
+          onRegister={() => navigateTo('signin')} 
+          onNavigateToSignIn={() => navigateTo('signin')} 
+        />;
       
       case 'dashboard':
         return (
           <WorkerDashboard 
             user={user} 
+            setUser={setUser}
             isDisrupted={isDisrupted} 
             rainLevel={rainLevel}
             activeTab={activeTab}         // PASSING THIS
             setActiveTab={setActiveTab}   // PASSING THIS
             onLogout={() => {
                 setActiveTab('overview'); // Reset tab on logout
+                localStorage.removeItem('aegis_user_data');
+                setUser({ name: "Guest User", zone: "Unknown", balance: 0, isProtected: false });
                 navigateTo('landing');
             }}
           />

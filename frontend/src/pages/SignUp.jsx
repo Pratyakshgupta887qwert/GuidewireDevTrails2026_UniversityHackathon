@@ -3,15 +3,41 @@ import { ShieldCheck, User, Phone, MapPin, CreditCard, Lock, FileText, ArrowRigh
 
 const SignUp = ({ onRegister, onNavigateToSignIn }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const [formData, setFormData] = useState({
+    name: '', phone: '', password: '', 
+    aadhaar: '', dl: '', rc: '', zone: '', upi: ''
+  });
 
-  const handleRegister = (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleRegister = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API delay for "High-Tech" feel
-    setTimeout(() => {
-      setIsLoading(false);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:8000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+      
       onRegister();
-    }, 1500);
+    } catch(err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,20 +67,20 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Full Name</label>
-                <input required type="text" placeholder="Rahul Kumar" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                <input required name="name" value={formData.name} onChange={handleChange} type="text" placeholder="Rahul Kumar" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Mobile Number</label>
                 <div className="relative group">
                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Phone size={16}/></div>
-                   <input required type="tel" placeholder="+91 98765 43210" className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                   <input required name="phone" value={formData.phone} onChange={handleChange} type="tel" placeholder="+91 98765 43210" className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
                 </div>
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Secure Password</label>
                 <div className="relative group">
                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Lock size={16}/></div>
-                   <input required type="password" placeholder="••••••••" className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                   <input required name="password" value={formData.password} onChange={handleChange} type="password" placeholder="••••••••" className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
                 </div>
               </div>
             </div>
@@ -68,15 +94,15 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Aadhaar Number</label>
-                <input required type="text" placeholder="XXXX XXXX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                <input required name="aadhaar" value={formData.aadhaar} onChange={handleChange} type="text" placeholder="XXXX XXXX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Driving License</label>
-                <input required type="text" placeholder="DL-14 XXXX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                <input required name="dl" value={formData.dl} onChange={handleChange} type="text" placeholder="DL-14 XXXX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Vehicle RC Number</label>
-                <input required type="text" placeholder="UP 16 XX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                <input required name="rc" value={formData.rc} onChange={handleChange} type="text" placeholder="UP 16 XX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
               </div>
             </div>
           </div>
@@ -89,22 +115,28 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Primary Zone</label>
-                <select required className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 cursor-pointer appearance-none">
-                  <option value="" disabled selected className="text-slate-500">Select Zone</option>
-                  <option value="62" className="bg-slate-900 text-slate-200">Sector 62, Noida</option>
-                  <option value="cp" className="bg-slate-900 text-slate-200">Connaught Place, Delhi</option>
-                  <option value="hub" className="bg-slate-900 text-slate-200">Cyber Hub, Gurgaon</option>
+                <select required name="zone" value={formData.zone} onChange={handleChange} className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 cursor-pointer appearance-none">
+                  <option value="" disabled className="text-slate-500">Select Zone</option>
+                  <option value="Sector 62, Noida" className="bg-slate-900 text-slate-200">Sector 62, Noida</option>
+                  <option value="Connaught Place, Delhi" className="bg-slate-900 text-slate-200">Connaught Place, Delhi</option>
+                  <option value="Cyber Hub, Gurgaon" className="bg-slate-900 text-slate-200">Cyber Hub, Gurgaon</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">UPI ID (For Payouts)</label>
                 <div className="relative group">
                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><CreditCard size={16}/></div>
-                   <input required type="text" placeholder="username@upi" className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
+                   <input required name="upi" value={formData.upi} onChange={handleChange} type="text" placeholder="username@upi" className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
                 </div>
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center">
+              {error}
+            </div>
+          )}
 
           {/* Submit Button */}
           <button 
