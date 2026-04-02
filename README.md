@@ -1,298 +1,508 @@
-# GuidewireDevTrails2026_UniversityHackathon
-# Smart Gig Insurance Platform (AI‑Powered Parametric Insurance) — MVP / Hackathon Build
-
-A parametric micro‑insurance platform for gig workers that **automatically detects external disruptions** (rain, heatwaves, curfew/lockdowns, AQI) using real-time signals and **triggers instant payouts** without manual claims.
+# AegisAI : Smart Gig Insurance Platform
+## AI-Powered Parametric Income Protection for Delivery Workers
 
 ---
 
-## 1) The Idea (Core Strategy)
+## ⚡ The Reality
 
-Gig workers lose income when external conditions make working unsafe or impossible. Traditional insurance is slow, claim-heavy, and expensive.  
-This project uses **parametric insurance**: payouts are triggered purely by **objective thresholds** (e.g., rain > 15mm/hr), not by manual evidence submission.
+A delivery worker starts his day expecting ₹800.
 
-**Goal (MVP):**
-- Let a worker buy a **7‑day policy**.
-- Detect a disruption event (or simulate via Admin “God Mode”).
-- Automatically evaluate eligible workers, run fraud checks, and record payout status.
-- Show the worker a **clear claim/payout timeline** and a **financial tracker**.
+By 2 PM, heavy rain hits. Roads flood. Orders stop.
+
+By night, he earns ₹0.
+
+No fault. No safety net.
+
+Just lost income.
+
+---
+## ⚡ Problem → Solution
+
+India’s gig workers depend on daily earnings, but external disruptions like:
+- heavy rain  
+- pollution spikes  
+- traffic breakdowns  
+
+can instantly eliminate their income.
+
+Traditional insurance does not cover **lost working hours** and relies on slow, manual claims — making it ineffective for gig workers.
 
 ---
 
-## 2) Personas + Scenarios (Requirement in Human Terms)
+### 💡 Our Solution
 
-### Persona A — Gig Worker (Rahul)
-- Delivers food, earns ~₹800/day.
-- If heavy rain forces him to stop for 4 hours, he loses ₹300–₹400.
-- Needs a **cheap**, **transparent**, **instant** safety net.
+We built a **parametric income insurance platform** that provides **short-term (weekly) coverage** for delivery workers.
 
-#### Scenario A1: Onboarding & Profiling
-1. Rahul logs in via **Phone + OTP**.
-2. Adds profile details:
-   - Name
-   - Platform: Swiggy / Zomato / Amazon / Other
-   - Avg Daily Income
-   - Avg Working Hours
-   - UPI ID
-3. App requests GPS permission and stores last known location pings.
-4. System calculates: **Hourly Wage = Avg Daily Income / Working Hours**
+The system continuously monitors:
+- weather conditions  
+- air quality (AQI)  
+- traffic patterns  
 
-**Outcome:** Rahul is eligible for risk scoring and policy purchase.
+When disruption thresholds are crossed:
+- affected workers are automatically identified  
+- income loss is calculated  
+- payouts are triggered instantly  
 
-#### Scenario A2: Buy Weekly Policy (7 Days)
-1. Rahul opens app dashboard.
-2. Sees:
-   - **Zone Risk Score (0–100)**
-   - Risk label (Low/Medium/High)
-   - Premium options + explanations (“frequent heavy rain expected”)
-3. Rahul taps **Buy Policy** and completes a **mock Razorpay (Test Mode)** payment.
-4. Backend issues a **Policy ID** valid for exactly **7 days**.
-
-**Outcome:** Rahul is covered for the next 7 days up to the tier’s coverage limit.
-
-#### Scenario A3: Disruption Happens → Auto Payout
-1. A weather/curfew/AQI event occurs (or admin triggers it).
-2. Backend finds active policies within the affected zone.
-3. Backend runs fraud checks:
-   - GPS distance check (within 10 km of zone)
-   - Duplicate claim check (same event)
-   - Trust score check
-4. If valid: payout is computed and recorded.
-
-**Outcome:** Rahul receives an instant payout entry in Claim History + a notification.
+👉 No claims. No delays. Just real-time income protection.
 
 ---
 
-### Persona B — Platform Admin (Priya)
-- Oversees platform health.
-- Needs analytics, claims monitoring, and a demo simulation switch (“God Mode”).
+## 🔗 Detailed Documentation
 
-#### Scenario B1: Admin Analytics
-Priya opens the web dashboard and sees KPI cards:
-- Total Active Workers
-- Total Active Policies
-- Total Premium Collected (₹)
-- Total Payouts Issued (₹)
+For deeper technical insights into our system design and implementation:
 
-Also sees a chart of claims frequency over the last 30 days.
+### 🏛️ Architecture & System Design
+- [🏛️ Architecture Overview](./docs/architecture.md)
+- [🧩 System Architecture](./docs/system-architecture.md)
+- [🗂️ Database Schema](./docs/database-schema.md)
 
-#### Scenario B2: “God Mode” Event Trigger (Hackathon Demo)
-Priya triggers a disruption manually:
-- Event Type: Rain / Heatwave / Curfew
-- Location/Zone: dropdown
-- Duration: hours
+### 🔌 Backend & APIs
+- [🔗 API Reference](./docs/api-reference.md)
 
-Backend executes the same parametric engine as if the event came from a real API.
+### 🧠 Intelligence Layer
+- [🧠 AI Risk Model](./docs/ai-risk-model.md)
+- [🚨 Fraud Detection](./docs/fraud-detection.md)
 
-**Outcome:** Judges can see end-to-end automation in a reliable demo flow.
+### ✨ Product Details
+- [✨ Product Features](./docs/product-features.md)
 
 ---
 
-## 3) End-to-End Workflow (MVP)
+## 3. Target Worker Persona
 
-### Worker Flow
-1. **Auth** (OTP) → JWT
-2. Profile setup + GPS permissions
-3. Risk score shown + premium tier explained
-4. Buy weekly policy (mock payment)
-5. Claims history + payout status tracking
-6. Financial tracker: Total Premium Paid, Total Payout Received, Net Benefit
+The platform focuses on **urban delivery workers**, particularly those operating in food or quick-commerce delivery networks.
 
-### Admin Flow
-1. View KPIs + claims table + fraud flags
-2. Trigger event (God Mode)
-3. Review claims and override fraud-flagged cases (Approve/Reject)
+A typical worker:
 
+- Works **8–10 hours per day**
+- Earns **₹700–₹1000 daily**
+- Relies heavily on **weather conditions and city mobility**
 
-<img width="839" height="475" alt="image" src="https://github.com/user-attachments/assets/711df0a3-14db-4869-ae38-a3eb3e6b6e47" />
+### Example Scenario
 
----
+A worker begins the day expecting a normal earning cycle.
 
-## 4) Weekly Premium Model (How Pricing Works)
+Mid-shift, a **heavy rainstorm** begins and traffic slows across the delivery zone. Orders drop, roads flood, and deliveries become difficult or unsafe.
 
-### Why Weekly?
-Gig income is daily/weekly; weekly plans:
-- are affordable (₹15–₹35/week),
-- match short-term uncertainty (weather volatility),
-- fit hackathon scope.
+Instead of losing those hours completely, the system detects the disruption and automatically calculates a compensation amount based on the worker’s expected earnings.
 
-### Risk Score → Premium Tier Mapping
-Risk score is computed as **0–100** and mapped to:
-
-| Risk Score | Tier | Premium (₹/week) | Max Cover (₹) |
-|-----------:|------|------------------:|--------------:|
-| 0–33 | Low | 15 | 1000 |
-| 34–66 | Medium | 25 | 2000 |
-| 67–100 | High | 35 | 3000 |
-
-### Premium Explanation (UX)
-The worker UI shows reasons behind pricing as bullet points:
-- “Frequent heavy rain expected”
-- “High AQI trend”
-- “Congestion index elevated”
-(Generated from the risk engine output fields.)
+This ensures that **temporary disruptions do not completely eliminate a day’s income**.
 
 ---
 
-## 5) Parametric Triggers (Objective, Automatic)
+## 4. Product Overview
 
-The platform triggers payout evaluation when thresholds cross:
+The platform is structured around three core components.
 
-- **Heavy Rain:** precipitation **> 15 mm/hour**
-- **Heatwave:** temperature **> 42°C**
-- **Pollution:** AQI **> 450** (“Severe Plus”)
-- **Traffic/Lockdown / Curfew:** average speed **< 5 km/hr** for **> 1 hour** OR Admin manual trigger
+### Worker Application
 
-These triggers are designed to be:
-- measurable from external APIs,
-- easy to justify to users,
-- automatable without manual claims.
+Used by delivery workers to:
 
----
+- register and authenticate
+- view coverage
+- track earnings protection
+- monitor claims and payouts
 
-## 6) Payout Calculation (Parametric Formula)
+### Risk Intelligence Engine
 
-When an event affects a covered worker:
+Processes external signals such as:
 
-- **Hourly_Rate = avg_daily_income / working_hours**
-- **Disruption_Duration_Hours = Event_End_Time - Event_Start_Time**
-- **Total_Payout = Hourly_Rate × Disruption_Duration_Hours**
-- Constraint: payout cannot exceed the policy’s **coverage_limit** for that week.
+- weather data
+- pollution data
+- traffic patterns
 
----
+These signals help detect disruptions and estimate zone risk.
 
-## 7) AI/ML Integration Plan (MVP + Next Steps)
+### Admin & Analytics Dashboard
 
-### 7.1 Risk & Premium Engine (AI-assisted pricing)
-**MVP approach (hackathon):**
-- Weighted scoring model (fast + deterministic) producing Risk_Score (0–100).
-- Inputs (example):
-  - recent/historical rainfall (zone)
-  - AQI trend
-  - traffic congestion index
-  - active user hours / demand signals
+Used for:
 
-**Post-MVP:**
-- Replace weights with trained ML model (e.g., XGBoost / scikit-learn pipeline).
-- Train with historical weather + claims outcomes to calibrate risk and premiums.
+- monitoring system activity
+- tracking disruption events
+- viewing policies and payouts
+- identifying fraud alerts
 
-### 7.2 Fraud Detection Engine
-**Rules-based MVP (fast + explainable):**
-- GPS spoofing / mismatch: last ping > 10 km from event zone
-- Duplicate claim: worker already paid for same event_id
-- Trust score low: trust_score < 40 flags claim for review
-
-**Post-MVP:**
-- Add anomaly detection:
-  - suspicious mobility patterns
-  - repeated near-boundary location pings
-  - payout frequency clustering
-- Use ML scoring to produce a fraud risk probability + explanations.
+Together these components form a system where **income protection becomes automatic, transparent, and data-driven**.
 
 ---
 
-## 8) Why Mobile for Workers + Web for Admin (Platform Justification)
+## 5. Key Features
 
-### Worker App: React Native (Mobile)
-- Gig workers operate in the field; mobile is natural.
-- Required features are mobile-first:
-  - OTP login
-  - GPS permissions and continuous location pings
-  - push notifications for disruption alerts & payouts
-  - map view + heatmap overlay
+The platform is designed to provide **real-time income protection for gig workers** through intelligent automation.
 
-### Admin Dashboard: Next.js (Web)
-- Admin tasks are monitoring-heavy:
-  - tables, charts, override actions
-  - demo controls (“God Mode”)
-- Web is faster to iterate and ideal for hackathon judging.
+- **📅 Weekly Coverage Model**  
+  Short-term insurance aligned with gig earning cycles  
+
+- **📊 Expected Earnings Predictor**  
+  Estimates worker income based on activity patterns  
+
+- **📉 Income Drop Detection**  
+  Identifies sudden earning disruptions  
+
+- **🗺️ Local Risk Heatmap**  
+  Visualizes high-risk delivery zones  
+
+- **💰 Dynamic Premium Pricing**  
+  Adjusts pricing based on zone risk score  
+
+- **⚡ Smart Claim Automation**  
+  Automatically triggers payouts during disruptions  
+
+- **📈 Income Protection Tracker**  
+  Displays protected vs lost income in real-time  
+---
+
+## 6. Risk & Premium Model
+
+The platform uses a **short-term, subscription-based model** aligned with gig workers’ daily earnings.
+
+Workers opt for **weekly coverage**, making it:
+- affordable  
+- flexible  
+- suited to their income cycle  
+
+Each worker is assigned a **risk score** based on:
+
+- weather conditions  
+- AQI levels  
+- traffic congestion  
+- historical disruptions  
+
+Based on this, workers fall into tiers:
+
+| Risk Level | Coverage Tier | Weekly Premium |
+|------------|--------------|---------------|
+| Low Risk   | Basic        | ₹15           |
+| Medium Risk| Standard     | ₹25           |
+| High Risk  | Extended     | ₹35           |
+
+Higher-risk zones offer **higher coverage limits** for fair compensation.
 
 ---
 
-## 9) Tech Stack
+## 7. Parametric Claim Automation
 
-### Frontend (Worker App)
-- React Native + Expo
-- Mapbox (heatmap overlay)
-- Push notifications (Expo Notifications or FCM)
-- Razorpay Test Mode (mock payment)
+The system monitors disruption indicators such as:
 
-### Frontend (Admin Dashboard)
-- Next.js
-- Tailwind CSS
-- Recharts (analytics)
+- heavy rainfall
+- extreme pollution
+- severe traffic congestion
+- restricted mobility
 
-### Backend
-- FastAPI (Python)
-- PostgreSQL + PostGIS (zones, geo queries)
-- Celery + Redis (background polling, bulk payout processing)
+When a disruption occurs the system executes:
 
----
+1. Detect disruption event  
+2. Identify affected workers  
+3. Run fraud validation  
+4. Calculate income loss  
+5. Generate claim & process payout
 
-## 10) Development Plan (24–48 Hour Hackathon)
+   
+### Automated Claim Processing Flow
 
-### Phase 1 (Hours 0–8): Foundation
-- Backend: FastAPI skeleton + PostgreSQL tables (Users, Policies)
-- Worker app: OTP login + profile screen
-- Admin web: dashboard scaffolding + layout
+```mermaid
+flowchart TD
 
-### Phase 2 (Hours 8–16): The Core Loop
-- Pricing engine endpoint: risk score → tier → premium
-- Policy purchase endpoint (mock payment) + 7-day policy issuance
-- Parametric trigger engine:
-  - create event
-  - find matching active policies in zone
-  - compute payout + create claim
+A[Worker Buys Weekly Policy] --> B[Policy Activated]
 
-### Phase 3 (Hours 16–24): Wow Factor / Integration
-- Admin “Trigger Disruption” panel wired to backend
-- Worker UI updates for claim history + payout status
-- Push notification (or realtime mock) on payout status
-- Mapbox heatmap (optional if time permits)
+B --> C[System Monitors External Signals]
 
----
+C --> D{Disruption Detected?}
 
-## 11) Repository & Deliverables
+D -->|No| C
 
-### Deliverable 1: The Idea Document
-This `README.md` is the concise idea document covering:
-- persona-based scenarios + workflows,
-- weekly premium model,
-- parametric triggers,
-- AI/ML integration approach,
-- stack + development plan.
+D -->|Yes| E[Identify Workers in Affected Zone]
 
-### Deliverable 2: Git Repository Link
-Add your repository link here:
-- **Repo:** `<PASTE YOUR GITHUB/GITLAB LINK HERE>`
+E --> F[Run Fraud Checks]
+
+F --> G{Eligible Worker?}
+
+G -->|No| H[Flag for Review]
+
+G -->|Yes| I[Calculate Income Loss]
+
+I --> J[Generate Claim Record]
+
+J --> K[Process Payout]
+
+K --> L[Update Worker Dashboard]
+```
 
 ---
 
-## 12) API Contract (MVP Reference)
+## 8. Fraud Detection
 
-- `POST /api/auth/verify-otp` → JWT Token  
-- `GET /api/worker/{id}/risk-profile` → Risk Score, Premium Tiers, Reasons  
-- `POST /api/policy/purchase` → `{user_id, tier, amount}`  
-- `GET /api/worker/{id}/dashboard` → Active policy, weather, financial totals  
-- `GET /api/claims/history/{user_id}` → Past claims list  
-- `POST /api/admin/trigger-disruption` → `{event_type, location, duration_hours}`
+The platform ensures secure payouts through multiple validation layers:
+
+- GPS location verification  
+- duplicate claim prevention  
+- delivery activity validation  
+- behavioral anomaly detection  
+- worker trust scoring
+  
+---
+
+## 🚨 Adversarial Defense & Anti-Spoofing Strategy  (Market Crash Response)
+
+To counter advanced GPS spoofing attacks and coordinated fraud rings, our platform uses a **multi-layered verification system beyond basic location checks**.
+
+- **Behavioral Analysis:** Detects real movement patterns vs spoofed/static signals  
+- **Multi-Signal Validation:** Combines GPS, device, and network intelligence  
+- **Fraud Ring Detection:** Identifies clustered and synchronized claim activity  
+- **Fair UX Handling:** Flags suspicious claims without penalizing genuine workers  
+
+👉 [View Detailed Anti-Spoofing Strategy](./docs/anti-spoofing.md)
 
 ---
 
-## 13) What’s Next (Beyond MVP)
-- Real external API integrations (weather, AQI, traffic)
-- Stronger ML pricing calibration
-- Real payout rails integration + reconciliation
-- More robust fraud ML + audit logs
-- Policy lifecycle management + renewals + refunds (if needed)
+## 9. System Architecture
 
+The system architecture consists of three layers.
+
+### Worker Application
+
+Mobile interface used for:
+
+- registration
+- policy activation
+- coverage monitoring
+- payout tracking
+
+### Backend Processing Engine
+
+Handles:
+
+- disruption detection
+- claim automation
+- fraud validation
+- payout processing
+
+### Admin Dashboard
+
+Provides:
+
+- analytics
+- disruption monitoring
+- fraud alerts
+
+### System Architecture Diagram
+
+```mermaid
+flowchart LR
+
+A[Worker Mobile App] --> B[Backend API Layer]
+C[Admin Dashboard] --> B
+
+B --> D[Risk Intelligence Engine]
+B --> E[Policy & Claims Engine]
+B --> F[Fraud Detection Module]
+
+D --> G[External Data Sources]
+
+G --> G1[Weather API]
+G --> G2[AQI API]
+G --> G3[Traffic API]
+
+E --> H[Policy Database]
+E --> I[Claims Database]
+
+E --> J[Payout Processing]
+J --> K[Worker Dashboard Update]
+
+F --> L[GPS Verification]
+F --> M[Trust Score Engine]
+```
 
 ---
 
+## 10. Demo Flow
 
-## 📄 Product Requirements Document (PRD)
+The demonstration scenario shows the full workflow.
 
-Detailed PRD available for this project.  
-Please visit the link below for complete understanding:
+1. Worker registers and creates profile.
+2. System calculates zone risk score.
+3. Worker activates weekly coverage.
+4. Admin simulates disruption event.
+5. System detects disruption.
+6. Fraud checks verify worker eligibility.
+7. Payout is calculated automatically.
+8. Worker dashboard updates with claim record.
 
-👉 <a href="https://gist.github.com/Pratyakshgupta887qwert/448847af9928fb5a6ce2cdeaad89b374">Link to Look over</a>
+---
+
+## 11. End-to-End System Workflow
+
+The diagram below illustrates the full lifecycle of the platform — from worker onboarding to automated disruption payouts.
+
+```mermaid
+flowchart TD
+
+A[Worker Registers on Mobile App] --> B[Create Worker Profile]
+
+B --> C[Risk Intelligence Engine Calculates Zone Risk Score]
+
+C --> D[Display Premium Options to Worker]
+
+D --> E[Worker Activates Weekly Coverage]
+
+E --> F[Policy Stored in Policy Database]
+
+F --> G[System Monitors External Data Sources]
+
+G --> H[Weather API]
+G --> I[AQI API]
+G --> J[Traffic API]
+
+H --> K[Risk Intelligence Engine]
+I --> K
+J --> K
+
+K --> L{Disruption Threshold Reached?}
+
+L -->|No| G
+
+L -->|Yes| M[Generate Disruption Event]
+
+M --> N[Identify Workers in Affected Zone]
+
+N --> O[Verify Active Policies]
+
+O --> P[Run Fraud Detection Checks]
+
+P --> Q[GPS Location Verification]
+
+Q --> R{Eligible Worker?}
+
+R -->|No| S[Flag Claim for Admin Review]
+
+R -->|Yes| T[Calculate Income Loss]
+
+T --> U[Apply Compensation Rule 75 Percent]
+
+U --> V[Generate Claim Record]
+
+V --> W[Process Payout]
+
+W --> X[Update Worker Dashboard]
+
+X --> Y[Notify Worker of Compensation]
+```
+---
+## 12. Technology Stack
+
+Our platform uses a modular architecture designed for **real-time disruption detection, automated claim processing, and scalable deployment**.
+
+### Platform Choice: Web + Mobile (Hybrid)
+
+The platform uses a **web-first approach with mobile accessibility**.
+
+- Core system built as a web application  
+- Delivered via a mobile-friendly interface  
+
+**Why this approach?**
+- Faster development during hackathon  
+- Single codebase, lower complexity  
+- Easy deployment and scalability  
+
+Designed for mobile usage since gig workers primarily operate via smartphones.
+
+### 📱 Frontend Interfaces
+Tech:
+- React / Next.js  
+- Android Studio (WebView wrapper)  
+- REST API integration  
+
+---
+
+### 🧩 Backend & Processing
+
+- **Python + FastAPI**  
+  Core backend framework handling APIs, policy lifecycle, and claim automation  
+
+- **Celery + Redis**  
+  Asynchronous processing for:
+  - disruption monitoring  
+  - bulk claim evaluation  
+  - payout processing  
+
+---
+
+### 🗂️ Data & Geospatial Layer
+
+- **PostgreSQL**  
+  Stores workers, policies, and claims data  
+
+- **PostGIS**  
+  Enables geospatial intelligence:
+  - worker location validation  
+  - disruption zone mapping  
+  - proximity queries  
+
+Example: ST_DWithin(worker_location, disruption_zone, 10000)
+
+---
+
+### 🧠 Risk Intelligence Engine
+
+- Processes environmental and historical data:
+  - rainfall intensity  
+  - AQI levels  
+  - traffic congestion  
+
+- Generates **zone risk scores** used for:
+  - premium calculation  
+  - disruption detection  
+
+- Built using:
+  - rule-based models (MVP)  
+  - extensible ML pipeline (future-ready)  
+
+---
+
+### 🌐 External Integrations
+
+| Service | Purpose |
+|--------|--------|
+| OpenWeatherMap | Weather & rainfall detection |
+| AQICN API | Air quality monitoring |
+| Google Maps API | Traffic congestion analysis |
+| Razorpay Sandbox | Simulated payout processing |
+
+---
+
+### 🛡️ Fraud & Trust Layer
+
+- **Geo-spatial validation (PostGIS)**  
+- **Behavioral anomaly detection**  
+- **Worker trust score system**  
+
+Supports:
+- duplicate claim detection  
+- abnormal activity tracking  
+- coordinated fraud identification  
+
+---
+
+**Admin Dashboard (Web Application)**
+
+- Built using React / Next.js  
+- Provides analytics, monitoring, and disruption simulation  
+
+---
+
+### 🔐 Security & Authentication
+
+- JWT-based authentication  
+- OTP login for workers  
+- Role-based access control  
+- API validation & request security  
+
+---
+
+### 🚀 Deployment & DevOps
+
+- Docker (containerized backend)  
+- Cloud hosting (AWS / Render / Railway)  
+- PostgreSQL hosting (Supabase / AWS RDS)  
+- GitHub for version control  
 ---
