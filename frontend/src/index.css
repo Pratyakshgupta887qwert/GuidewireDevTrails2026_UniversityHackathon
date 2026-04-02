@@ -111,7 +111,7 @@ code {
 } */
 
 
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -122,6 +122,8 @@ code {
 }
 
 /* Smooth transitions for your simulation */
-.transition-all {
+/* .transition-all {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
+} */
+
+@import "tailwindcss";

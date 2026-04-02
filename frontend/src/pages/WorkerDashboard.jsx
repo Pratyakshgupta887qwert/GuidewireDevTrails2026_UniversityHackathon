@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldCheck, Wallet, TrendingUp, Clock, MapPin, 
   Bell, Settings, LogOut, CloudRain, Zap, 
@@ -6,7 +6,14 @@ import {
   ShieldAlert, History
 } from 'lucide-react';
 
-const WorkerDashboard = ({ user, isDisrupted, rainLevel, onLogout }) => {
+import PolicyTiers from './PolicyTiers';
+import PayoutHistory from './PayoutHistory';
+import SettingsPage from './Settings';
+import NotificationsPage from './Notifications';
+
+const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab, onLogout }) => {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
   return (
     <div className="min-h-screen bg-[#F0F2F5] flex">
       
@@ -20,11 +27,12 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, onLogout }) => {
         </div>
 
         <nav className="flex-1 space-y-2">
-          <SidebarItem icon={<LayoutDashboard size={20}/>} label="Overview" active />
-          <SidebarItem icon={<ShieldAlert size={20}/>} label="Policy Tiers" />
-          <SidebarItem icon={<History size={20}/>} label="Payout History" />
-          <SidebarItem icon={<Wallet size={20}/>} label="Earnings" />
-          <SidebarItem icon={<Settings size={20}/>} label="Settings" />
+          <SidebarItem icon={<LayoutDashboard size={20}/>} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+          <SidebarItem icon={<ShieldAlert size={20}/>} label="Policy Tiers" active={activeTab === 'policy'} onClick={() => setActiveTab('policy')} />
+          <SidebarItem icon={<History size={20}/>} label="Payout History" active={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+          <SidebarItem icon={<Bell size={20}/>} label="Notifications" badge="3" active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} />
+          <SidebarItem icon={<Wallet size={20}/>} label="Earnings" active={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')} />
+          <SidebarItem icon={<Settings size={20}/>} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
         </nav>
 
         <button 
@@ -45,18 +53,96 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, onLogout }) => {
              <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Active Partner</span>
           </div>
           <div className="flex items-center gap-6">
-             <div className="relative cursor-pointer">
-                <Bell className="text-slate-400" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[10px] text-white flex items-center justify-center font-bold">3</span>
+             
+             {/* Notifications Dropdown */}
+             <div className="relative">
+                 <div 
+                    onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
+                    className="relative cursor-pointer p-2 hover:bg-slate-50 rounded-full transition-colors"
+                 >
+                    <Bell className="text-slate-400" />
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white text-[10px] text-white flex items-center justify-center font-bold">3</span>
+                 </div>
+
+                 {showNotificationsMenu && (
+                   <div className="absolute right-0 mt-3 w-80 bg-white rounded-[24px] shadow-2xl border border-slate-100 p-4 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+                      <div className="flex justify-between items-center mb-4 px-2">
+                         <h4 className="font-black text-slate-900">Notifications</h4>
+                         <span className="text-xs font-bold text-blue-600 cursor-pointer hover:underline" onClick={() => setShowNotificationsMenu(false)}>Mark all read</span>
+                      </div>
+                      <div className="space-y-2 mb-4">
+                         <div className="flex gap-3 items-start p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                               <CloudRain size={14}/>
+                            </div>
+                            <div>
+                               <p className="text-sm font-bold text-slate-800">Heavy Rain Expected</p>
+                               <p className="text-[11px] font-medium text-slate-500 mt-0.5 line-clamp-1">Monsoon level rain detected...</p>
+                            </div>
+                         </div>
+                         <div className="flex gap-3 items-start p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
+                            <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 mt-0.5">
+                               <Zap size={14}/>
+                            </div>
+                            <div>
+                               <p className="text-sm font-bold text-slate-800">Payout Dispatched</p>
+                               <p className="text-[11px] font-medium text-slate-500 mt-0.5 line-clamp-1">₹450 credited to wallet.</p>
+                            </div>
+                         </div>
+                      </div>
+                      <button 
+                         onClick={() => { setActiveTab('notifications'); setShowNotificationsMenu(false); }}
+                         className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-bold rounded-xl transition-colors"
+                      >
+                         View All Notifications
+                      </button>
+                   </div>
+                 )}
              </div>
-             <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="avatar" />
+
+             <div className="relative">
+                <div 
+                   onClick={() => setShowProfileMenu(!showProfileMenu)}
+                   className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden cursor-pointer"
+                >
+                   <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="avatar" />
+                </div>
+                
+                {/* Profile Overview Dropdown */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-[24px] shadow-2xl border border-slate-100 p-4 z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+                    <div className="text-center pb-4 border-b border-slate-100 mb-4">
+                      <div className="w-16 h-16 rounded-full bg-slate-200 border-4 border-white shadow-sm overflow-hidden mx-auto mb-2">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} alt="avatar" />
+                      </div>
+                      <h4 className="font-black text-slate-900">{user.name}</h4>
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1 bg-emerald-50 inline-block px-2 py-0.5 rounded-full">Active Partner</p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-2">{user.zone}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <button 
+                         onClick={() => { setActiveTab('settings'); setShowProfileMenu(false); }}
+                         className="w-full text-left px-4 py-3 text-sm font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                      >
+                         Account Settings
+                      </button>
+                      <button 
+                         onClick={onLogout}
+                         className="w-full text-left px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                      >
+                         Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
              </div>
           </div>
         </header>
 
         <main className="p-8 space-y-8 max-w-7xl mx-auto w-full">
           
+          {activeTab === 'overview' && (
+            <>
           {/* 1. DISRUPTION BANNER */}
           <div className={`relative overflow-hidden rounded-[40px] p-10 text-white transition-all duration-700 shadow-2xl ${
             isDisrupted ? 'bg-gradient-to-br from-red-600 via-orange-500 to-red-600' : 'bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700'
@@ -140,6 +226,17 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, onLogout }) => {
                </button>
             </div>
           </div>
+            </>
+          )}
+
+          {activeTab === 'policy' && <PolicyTiers />}
+
+          {activeTab === 'payouts' && <PayoutHistory />}
+
+          {activeTab === 'notifications' && <NotificationsPage />}
+
+          {activeTab === 'settings' && <SettingsPage user={user} />}
+
         </main>
       </div>
     </div>
@@ -148,12 +245,17 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, onLogout }) => {
 
 // --- HELPER COMPONENTS ---
 
-const SidebarItem = ({ icon, label, active = false }) => (
-  <div className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl cursor-pointer transition-all ${
+const SidebarItem = ({ icon, label, active = false, onClick, badge }) => (
+  <div onClick={onClick} className={`flex items-center justify-between px-4 py-3.5 rounded-2xl cursor-pointer transition-all ${
     active ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
   }`}>
-    {icon}
-    <span className="font-bold text-sm">{label}</span>
+    <div className="flex items-center gap-4">
+      {icon}
+      <span className="font-bold text-sm">{label}</span>
+    </div>
+    {badge && (
+      <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">{badge}</span>
+    )}
   </div>
 );
 
