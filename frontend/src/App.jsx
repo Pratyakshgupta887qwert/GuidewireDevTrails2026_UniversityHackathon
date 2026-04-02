@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LandingPage from './pages/Landing';
 import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
 import WorkerDashboard from './pages/WorkerDashboard';
 
 function App() {
@@ -30,7 +31,10 @@ function App() {
         return <LandingPage onStart={() => navigateTo('signin')} />;
       
       case 'signin':
-        return <SignIn onLogin={() => navigateTo('dashboard')} />;
+        return <SignIn onLogin={() => navigateTo('dashboard')} onNavigateToSignUp={() => navigateTo('signup')} />;
+      
+      case 'signup':
+        return <SignUp onRegister={() => navigateTo('dashboard')} onNavigateToSignIn={() => navigateTo('signin')} />;
       
       case 'dashboard':
         return (
@@ -70,7 +74,7 @@ function App() {
               isDisrupted ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white animate-pulse'
             }`}
           >
-            {isDisrupted ? "☀️ Reset Weather" : "🌧️ Simulate Heavy Rain"}
+            {isDisrupted ? "☀️ Reset Weather" : "🌧️ { CLICK HERE TO SEE } Simulate Heavy Rain (ONLY FOR DEMO AS WE don't have a real-time weather satellite or IoT sensors connected"}
           </button>
         </div>
       )}

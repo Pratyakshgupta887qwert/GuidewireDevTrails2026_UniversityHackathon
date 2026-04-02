@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Phone, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
 
-const SignIn = ({ onLogin }) => {
+const SignIn = ({ onLogin, onNavigateToSignUp }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -97,8 +97,15 @@ const SignIn = ({ onLogin }) => {
           </button>
         </form>
 
+        <div className="mt-8 text-center border-b border-slate-700/50 pb-8">
+            <p className="text-slate-400 font-bold text-sm">
+               Don't have an account? {' '}
+               <button onClick={onNavigateToSignUp} className="text-blue-400 hover:text-blue-300 transition-colors underline underline-offset-4">Sign up here</button>
+            </p>
+        </div>
+
         {/* Footer info */}
-        <div className="mt-10 pt-8 border-t border-slate-700/50 flex items-center justify-center gap-2 text-slate-400">
+        <div className="mt-8 flex items-center justify-center gap-2 text-slate-400">
           <CheckCircle2 size={16} className="text-emerald-500" />
           <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Bank-Grade 256-bit Encryption</p>
         </div>

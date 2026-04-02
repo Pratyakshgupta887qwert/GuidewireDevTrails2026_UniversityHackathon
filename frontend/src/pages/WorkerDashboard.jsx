@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ShieldCheck, Wallet, TrendingUp, Clock, MapPin, 
   Bell, Settings, LogOut, CloudRain, Zap, 
@@ -14,6 +14,26 @@ import NotificationsPage from './Notifications';
 const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab, onLogout }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+
+  const notificationsRef = useRef(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setShowNotificationsMenu(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-transparent flex">
       
@@ -55,7 +75,7 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab
           <div className="flex items-center gap-6">
              
              {/* Notifications Dropdown */}
-             <div className="relative">
+             <div className="relative" ref={notificationsRef}>
                  <div 
                     onClick={() => setShowNotificationsMenu(!showNotificationsMenu)}
                     className="relative cursor-pointer p-2 hover:bg-slate-800/50 rounded-full transition-colors"
@@ -100,7 +120,7 @@ const WorkerDashboard = ({ user, isDisrupted, rainLevel, activeTab, setActiveTab
                  )}
              </div>
 
-             <div className="relative">
+             <div className="relative" ref={profileRef}>
                 <div 
                    onClick={() => setShowProfileMenu(!showProfileMenu)}
                    className="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700/50 shadow-sm overflow-hidden cursor-pointer hover:border-blue-500/50 transition-colors"
