@@ -1,45 +1,31 @@
-/**
- * AegisAI — Unified Express Backend  (v3 — TEXT-ID schema)
- * Run:  npm run dev   (nodemon) | npm start (node)
- *
- * Schema decisions for hackathon reliability:
- *  - All primary keys are TEXT (we write UUIDs into them via crypto.randomUUID())
- *  - No strict UUID column type → eliminates "invalid input syntax for type uuid"
- *  - users.balance (NUMERIC) tracks real earned balance, seeded at ₹1250
- */
-
 'use strict';
 
-const express  = require('express');
-const cors     = require('cors');
+const express = require('express');
+const cors = require('cors');
 const { Pool } = require('pg');
-const bcrypt   = require('bcrypt');
+const bcrypt = require('bcrypt');
 const { randomUUID } = require('crypto');
 require('dotenv').config();
 
-// ── Route modules ──────────────────────────────────────────────────────────────
-const riskModule     = require('./routes/risk');
+const riskModule = require('./routes/risk');
 const policiesModule = require('./routes/policies');
-const payoutsModule  = require('./routes/payouts');
+const payoutsModule = require('./routes/payouts');
+const { SUPPORTED_CITIES, roundCurrency } = require('./lib/insuranceEngine');
+
 const { router: riskRouter, state: riskState } = riskModule;
 
-// ── Config ─────────────────────────────────────────────────────────────────────
-const PORT           = parseInt(process.env.PORT  || '8000', 10);
+const PORT = parseInt(process.env.PORT || '8000', 10);
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
-const DATABASE_URL   = process.env.DATABASE_URL;
 
-// ── Database pool ──────────────────────────────────────────────────────────────
 const pool = new Pool({
-  connectionString: DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-// Wire pool into feature routers before routes are registered
 riskModule.setPool(pool);
 policiesModule.setPool(pool);
 payoutsModule.setPool(pool);
 
-// ── Express app ────────────────────────────────────────────────────────────────
 const app = express();
 app.use(cors({
   origin: ALLOWED_ORIGIN,
@@ -48,244 +34,301 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DB INIT — TEXT-based schema + smart migration + test-user seed
-// ─────────────────────────────────────────────────────────────────────────────
+function safeUser(row) {
+  if (!row) {
+    return null;
+  }
+
+  const user = { ...row };
+  delete user.password_hash;
+  user.balance = roundCurrency(user.balance ?? 0);
+  user.avg_daily_income = roundCurrency(user.avg_daily_income ?? 0);
+  user.working_hours = Number(user.working_hours ?? 0);
+  return user;
+}
+
 async function initDB() {
   try {
-    await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+    await pool.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
 
-    // Detect existing schema type for users.id
-    const colCheck = await pool.query(`
-      SELECT data_type FROM information_schema.columns
-      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'id'
+    const typeCheck = await pool.query(`
+      SELECT data_type
+        FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'users'
+         AND column_name = 'id'
     `);
 
-    const existingType = colCheck.rows[0]?.data_type ?? null;
+    const existingType = typeCheck.rows[0]?.data_type;
 
     if (existingType && existingType !== 'text') {
-      // Old schema (integer SERIAL or UUID) — wipe and recreate with TEXT
-      console.log(`⚠️  Detected incompatible schema (${existingType}). Migrating to TEXT IDs...`);
-      await pool.query(`DROP TABLE IF EXISTS claims   CASCADE`);
-      await pool.query(`DROP TABLE IF EXISTS policies CASCADE`);
-      await pool.query(`DROP TABLE IF EXISTS users    CASCADE`);
-      console.log('🗑️  Old tables dropped. Recreating...');
+      await pool.query('DROP TABLE IF EXISTS claims CASCADE');
+      await pool.query('DROP TABLE IF EXISTS policies CASCADE');
+      await pool.query('DROP TABLE IF EXISTS users CASCADE');
     }
 
-    // ── users ──────────────────────────────────────────────────────────────────
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id               TEXT PRIMARY KEY,
-        name             VARCHAR(100)  NOT NULL,
-        phone            VARCHAR(20)   UNIQUE NOT NULL,
-        password_hash    TEXT          NOT NULL,
-        zone             VARCHAR(100)  DEFAULT 'Sector 62, Noida',
-        upi_id           VARCHAR(100),
-        aadhaar_number   VARCHAR(12),
-        aadhaar_verified BOOLEAN       NOT NULL DEFAULT FALSE,
-        balance          NUMERIC(12,2) NOT NULL DEFAULT 1250.00,
-        created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+        id TEXT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        phone VARCHAR(20) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        city VARCHAR(50) NOT NULL DEFAULT 'Noida',
+        zone VARCHAR(50) NOT NULL DEFAULT 'Noida',
+        pan_card VARCHAR(20) NOT NULL,
+        phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
+        aadhaar_number VARCHAR(12),
+        aadhaar_verified BOOLEAN NOT NULL DEFAULT FALSE,
+        avg_daily_income NUMERIC(10,2) NOT NULL DEFAULT 1200,
+        working_hours NUMERIC(5,2) NOT NULL DEFAULT 10,
+        balance NUMERIC(12,2) NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
 
-    // Add balance column if it was missing (safe no-op if it exists)
-    await pool.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) NOT NULL DEFAULT 1250.00
-    `).catch(() => {});
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(50) NOT NULL DEFAULT 'Noida'`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS zone VARCHAR(50) NOT NULL DEFAULT 'Noida'`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pan_card VARCHAR(20) NOT NULL DEFAULT 'TEMP0000A'`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS aadhaar_number VARCHAR(12)`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS aadhaar_verified BOOLEAN NOT NULL DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_daily_income NUMERIC(10,2) NOT NULL DEFAULT 1200`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS working_hours NUMERIC(5,2) NOT NULL DEFAULT 10`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) NOT NULL DEFAULT 0`);
 
-    // ── policies ───────────────────────────────────────────────────────────────
     await pool.query(`
       CREATE TABLE IF NOT EXISTS policies (
-        id                TEXT PRIMARY KEY,
-        user_id           TEXT          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        tier_name         VARCHAR(20)   NOT NULL,
-        policy_start_date TIMESTAMPTZ   NOT NULL,
-        policy_end_date   TIMESTAMPTZ   NOT NULL,
-        premium_amount    NUMERIC(10,2) NOT NULL,
-        coverage_amount   NUMERIC(10,2) NOT NULL,
-        risk_level        VARCHAR(10)   NOT NULL,
-        status            VARCHAR(10)   NOT NULL DEFAULT 'active',
-        created_at        TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        tier_name VARCHAR(20) NOT NULL,
+        policy_start_date TIMESTAMPTZ NOT NULL,
+        policy_end_date TIMESTAMPTZ NOT NULL,
+        premium_amount NUMERIC(10,2) NOT NULL,
+        coverage_amount NUMERIC(10,2) NOT NULL,
+        risk_level VARCHAR(10) NOT NULL,
+        status VARCHAR(10) NOT NULL DEFAULT 'active',
+        risk_score NUMERIC(6,2) NOT NULL DEFAULT 0,
+        multiplier NUMERIC(4,2) NOT NULL DEFAULT 1,
+        city VARCHAR(50) NOT NULL DEFAULT 'Noida',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
 
-    // ── claims ─────────────────────────────────────────────────────────────────
+    await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS risk_score NUMERIC(6,2) NOT NULL DEFAULT 0`);
+    await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS multiplier NUMERIC(4,2) NOT NULL DEFAULT 1`);
+    await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS city VARCHAR(50) NOT NULL DEFAULT 'Noida'`);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS claims (
-        id            TEXT PRIMARY KEY,
-        user_id       TEXT          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        policy_id     TEXT          NOT NULL REFERENCES policies(id) ON DELETE CASCADE,
-        event_type    VARCHAR(50)   NOT NULL,
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        policy_id TEXT NOT NULL REFERENCES policies(id) ON DELETE CASCADE,
+        event_type VARCHAR(50) NOT NULL,
         payout_amount NUMERIC(10,2) NOT NULL,
-        status        VARCHAR(20)   NOT NULL,
-        created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+        status VARCHAR(20) NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE (policy_id, event_type)
       )
     `);
 
-    console.log('✅  Database tables ready (TEXT-ID schema)');
-
-    // ── Seed default test user ─────────────────────────────────────────────────
-    const existing = await pool.query(`SELECT id FROM users WHERE phone = $1`, ['1234567890']);
-    if (existing.rows.length === 0) {
-      const hash = await bcrypt.hash('123456', 10);
+    const demoUser = await pool.query('SELECT id FROM users WHERE phone = $1', ['9876543210']);
+    if (demoUser.rows.length === 0) {
+      const hash = await bcrypt.hash('otp-simulated-auth', 10);
       await pool.query(
-        `INSERT INTO users (id, name, phone, password_hash, zone, balance)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [randomUUID(), 'Demo User', '1234567890', hash, 'Sector 62, Noida', 1250]
+        `INSERT INTO users (
+            id,
+            name,
+            phone,
+            password_hash,
+            city,
+            zone,
+            pan_card,
+            phone_verified,
+            aadhaar_verified,
+            avg_daily_income,
+            working_hours,
+            balance
+          )
+          VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,FALSE,$8,$9,$10)`,
+        [randomUUID(), 'Demo User', '9876543210', hash, 'Delhi', 'Delhi', 'ABCDE1234F', 1500, 10, 0]
       );
-      console.log('🌱  Test user seeded  →  phone: 1234567890 | password: 123456');
     }
 
-  } catch (err) {
-    console.error('❌  DB init error:', err.message);
+    console.log('Database ready');
+  } catch (error) {
+    console.error('DB init error:', error.message);
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-function safeUser(row) {
-  if (!row) return null;
-  const u = { ...row };
-  delete u.password_hash;
-  u.balance = parseFloat(u.balance ?? 1250);
-  return u;
-}
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', cities: SUPPORTED_CITIES });
+});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HEALTH
-// ─────────────────────────────────────────────────────────────────────────────
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
-
-// ─────────────────────────────────────────────────────────────────────────────
-// AUTH ROUTES
-// ─────────────────────────────────────────────────────────────────────────────
-
-// POST /api/signup
 app.post('/api/signup', async (req, res) => {
-  const { name, phone, password, zone, upi } = req.body;
-  if (!name || !phone || !password) {
-    return res.status(400).json({ error: 'Name, phone, and password are required' });
+  const {
+    name,
+    phone,
+    pan_card,
+    city,
+    avg_daily_income = 1200,
+    working_hours = 10,
+    otp_verified = false,
+  } = req.body;
+
+  if (!name || !phone || !pan_card || !city) {
+    return res.status(400).json({ error: 'name, phone, pan_card, and city are required' });
   }
+
+  if (!SUPPORTED_CITIES.includes(city)) {
+    return res.status(422).json({ error: 'Please select a supported city' });
+  }
+
+  if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(pan_card)) {
+    return res.status(422).json({ error: 'PAN card format should look like ABCDE1234F' });
+  }
+
   try {
-    const hash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash('otp-simulated-auth', 10);
     const result = await pool.query(
-      `INSERT INTO users (id, name, phone, password_hash, zone, upi_id, balance)
-       VALUES ($1,$2,$3,$4,$5,$6,1250) RETURNING *`,
-      [randomUUID(), name, phone, hash, zone || 'Sector 62, Noida', upi || null]
+      `INSERT INTO users (
+          id,
+          name,
+          phone,
+          password_hash,
+          city,
+          zone,
+          pan_card,
+          phone_verified,
+          avg_daily_income,
+          working_hours,
+          balance
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,0)
+        RETURNING *`,
+      [
+        randomUUID(),
+        name,
+        phone,
+        passwordHash,
+        city,
+        city,
+        pan_card.toUpperCase(),
+        Boolean(otp_verified),
+        avg_daily_income,
+        working_hours,
+      ]
     );
-    return res.status(201).json({ message: 'Registration successful', user: safeUser(result.rows[0]) });
-  } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ error: 'Phone number already registered' });
-    return res.status(500).json({ error: err.message });
+
+    return res.status(201).json({
+      message: 'Signup successful',
+      user: safeUser(result.rows[0]),
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Phone number already registered' });
+    }
+
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// POST /api/signin  (also aliased as /api/login)
 async function handleSignIn(req, res) {
-  const { phone, password } = req.body;
-  if (!phone || !password) {
-    return res.status(400).json({ error: 'Phone and password are required' });
+  const { phone } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ error: 'phone is required' });
   }
+
   try {
-    const result = await pool.query('SELECT * FROM users WHERE phone=$1', [phone]);
+    const result = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'User not found. Please sign up first.' });
+      return res.status(404).json({ error: 'User not found. Please sign up first.' });
     }
-    const user = result.rows[0];
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ error: 'Invalid password' });
-    return res.json({ message: 'Logged in successfully', user: safeUser(user) });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+
+    return res.json({
+      message: 'Login successful',
+      user: safeUser(result.rows[0]),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 }
-app.post('/api/signin', handleSignIn);
-app.post('/api/login',  handleSignIn);   // alias used by some components
 
-// POST /api/update-settings
+app.post('/api/signin', handleSignIn);
+app.post('/api/login', handleSignIn);
+
 app.post('/api/update-settings', async (req, res) => {
-  const { phone, name, zone, upi_id } = req.body;
-  if (!phone) return res.status(400).json({ error: 'Phone number required' });
+  const {
+    phone,
+    name,
+    city,
+    pan_card,
+    avg_daily_income,
+    working_hours,
+  } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({ error: 'phone is required' });
+  }
+
   try {
     await pool.query(
       `UPDATE users
-          SET name   = COALESCE($1, name),
-              zone   = COALESCE($2, zone),
-              upi_id = COALESCE($3, upi_id)
-        WHERE phone = $4`,
-      [name || null, zone || null, upi_id || null, phone]
+          SET name = COALESCE($1, name),
+              city = COALESCE($2, city),
+              zone = COALESCE($2, zone),
+              pan_card = COALESCE($3, pan_card),
+              avg_daily_income = COALESCE($4, avg_daily_income),
+              working_hours = COALESCE($5, working_hours)
+        WHERE phone = $6`,
+      [name || null, city || null, pan_card || null, avg_daily_income || null, working_hours || null, phone]
     );
-    const result = await pool.query('SELECT * FROM users WHERE phone=$1', [phone]);
-    return res.json({ message: 'Settings updated successfully', user: safeUser(result.rows[0]) });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+
+    const result = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({
+      message: 'Settings updated successfully',
+      user: safeUser(result.rows[0]),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// GET /api/user/:id  — re-fetch fresh user data (used after simulate to update balance)
 app.get('/api/user/:id', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users WHERE id=$1', [req.params.id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    return res.json({ user: safeUser(result.rows[0]) });
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ user: safeUser(userResult.rows[0]) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FEATURE ROUTERS
-// ─────────────────────────────────────────────────────────────────────────────
+app.use('/api/risk', riskRouter);
+app.use('/api/admin', riskRouter);
+app.use('/api/policy', policiesModule.router);
+app.use('/api/user', policiesModule.router);
+app.use('/api/claim', payoutsModule.router);
+app.use('/api/claims', payoutsModule.router);
+app.use('/api', policiesModule.router);
+app.use('/api', riskRouter);
 
-// Risk / weather / simulate
-app.use('/api/risk',  riskRouter);
-app.use('/api/admin', riskRouter);          // /api/admin/trigger-event
-
-// Legacy alias GET /api/risk-status
-app.get('/api/risk-status', (_req, res) => res.json({
-  zone: 'Sector 62, Noida',
-  rainLevel:   riskState.rainLevel,
-  isDisrupted: riskState.isDisrupted,
-  payoutAmount: riskState.isDisrupted ? Math.round(riskState.hourlyRate * riskState.disruptionHours) : 0,
-  status: riskState.isDisrupted ? 'CRITICAL' : 'STABLE',
-}));
-
-// /api/simulate → forward to trigger-event
-app.post('/api/simulate', (req, res, next) => {
-  const rain = typeof req.body.rain === 'number' ? req.body.rain : 12;
-  req.body = { event_type: 'heavy_rain', rain, disruption_hours: rain > 8 ? 3 : 0, hourly_rate: 150 };
-  req.url = '/trigger-event';
-  riskRouter(req, res, next);
+app.get('/api/risk-status', async (req, res) => {
+  const city = req.query.city || riskState.city || 'Noida';
+  req.query.city = city;
+  req.url = '/status';
+  riskRouter(req, res, () => {});
 });
 
-// Policies
-app.use('/api/policy', policiesModule.router);
-app.use('/api/user',   policiesModule.router);   // /api/user/verify-aadhaar
-
-// Claims / payouts
-app.use('/api/claim',  payoutsModule.router);
-app.use('/api/claims', payoutsModule.router);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// START
-// ─────────────────────────────────────────────────────────────────────────────
 initDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`\n🚀  AegisAI Backend  →  http://localhost:${PORT}`);
-    console.log(`    CORS: ${ALLOWED_ORIGIN}`);
-    console.log('    ─────────────────────────────────────────');
-    console.log('    GET  /api/health');
-    console.log('    GET  /api/risk/status');
-    console.log('    POST /api/simulate           ← Heavy Rain trigger');
-    console.log('    POST /api/signup | signin | login | update-settings');
-    console.log('    GET  /api/user/:id           ← refresh user (balance)');
-    console.log('    POST /api/policy/purchase');
-    console.log('    GET  /api/policy/active/:user_id');
-    console.log('    POST /api/user/verify-aadhaar');
-    console.log('    POST /api/claim/submit');
-    console.log('    GET  /api/claims/:user_id');
-    console.log('    ─────────────────────────────────────────\n');
+    console.log(`AegisAI backend running on http://localhost:${PORT}`);
   });
 });

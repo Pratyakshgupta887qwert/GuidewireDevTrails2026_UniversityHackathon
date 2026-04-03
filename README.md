@@ -416,14 +416,14 @@ Tech:
 
 ### 🧩 Backend & Processing
 
-- **Python + FastAPI**  
-  Core backend framework handling APIs, policy lifecycle, and claim automation  
+- **Node.js + Express**  
+  Core backend framework handling APIs, policy lifecycle, claim automation, and dashboard simulation routes  
 
-- **Celery + Redis**  
-  Asynchronous processing for:
+- **Built-in async job handling**  
+  Lightweight background processing for:
   - disruption monitoring  
-  - bulk claim evaluation  
-  - payout processing  
+  - policy expiry checks  
+  - payout simulation updates  
 
 ---
 
