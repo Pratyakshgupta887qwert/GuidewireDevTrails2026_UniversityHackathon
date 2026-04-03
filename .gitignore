@@ -36,3 +36,13 @@ coverage
 # Operating System Files
 desktop.ini
 Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Python virtual env (if any)
+venv/
+.env/

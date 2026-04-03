@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { ShieldCheck, User, Phone, MapPin, CreditCard, Lock, FileText, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, User, Phone, MapPin, CreditCard, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { apiRequest } from '../lib/api';
 
 const SignUp = ({ onRegister, onNavigateToSignIn }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
-    name: '', phone: '', password: '', 
-    aadhaar: '', dl: '', rc: '', zone: '', upi: ''
+    name: '', phone: '', password: '', zone: '', upi: ''
   });
 
   const handleChange = (e) => {
@@ -20,18 +20,11 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/signup', {
+      await apiRequest('/api/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-      
+
       onRegister();
     } catch(err) {
       setError(err.message);
@@ -86,28 +79,7 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
             </div>
           </div>
 
-          {/* Section 2: KYC & Documents */}
-          <div className="bg-slate-900/40 p-6 rounded-[24px] border border-slate-700/50">
-            <h4 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <FileText size={16} className="text-emerald-400" /> KYC Authentication
-            </h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Aadhaar Number</label>
-                <input required name="aadhaar" value={formData.aadhaar} onChange={handleChange} type="text" placeholder="XXXX XXXX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Driving License</label>
-                <input required name="dl" value={formData.dl} onChange={handleChange} type="text" placeholder="DL-14 XXXX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Vehicle RC Number</label>
-                <input required name="rc" value={formData.rc} onChange={handleChange} type="text" placeholder="UP 16 XX XXXX" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 placeholder:text-slate-600" />
-              </div>
-            </div>
-          </div>
-
-           {/* Section 3: Work Info */}
+           {/* Section 2: Work Info */}
            <div className="bg-slate-900/40 p-6 rounded-[24px] border border-slate-700/50">
             <h4 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-4 flex items-center gap-2">
               <MapPin size={16} className="text-rose-400" /> Work Profile
