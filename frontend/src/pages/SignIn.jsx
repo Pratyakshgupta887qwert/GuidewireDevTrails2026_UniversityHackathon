@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, Phone, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 
-const SignIn = ({ onLogin, onNavigateToSignUp }) => {
+const SignIn = ({ onLogin, onNavigateToSignUp, onNavigateToAdmin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [phone, setPhone] = useState('');
@@ -132,6 +132,16 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
           <CheckCircle2 size={16} className="text-emerald-500" />
           <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Bank-Grade 256-bit Encryption</p>
         </div>
+
+        {/* Admin entry — subtle */}
+        {onNavigateToAdmin && (
+          <div className="mt-6 text-center pt-4 border-t border-slate-800">
+            <button onClick={onNavigateToAdmin}
+              className="text-[10px] font-bold text-slate-700 hover:text-slate-500 transition-colors uppercase tracking-widest">
+              ⚙ Admin Terminal Access
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
