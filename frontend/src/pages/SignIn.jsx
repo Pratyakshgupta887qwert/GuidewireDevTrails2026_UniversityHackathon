@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Phone, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { apiRequest } from '../lib/api';
 
 const SignIn = ({ onLogin, onNavigateToSignUp }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,18 +15,11 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/signin', {
+      const data = await apiRequest('/api/signin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, password })
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-      
+
       onLogin(data.user);
     } catch(err) {
       setError(err.message);
