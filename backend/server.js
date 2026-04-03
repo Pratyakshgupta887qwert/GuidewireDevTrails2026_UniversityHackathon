@@ -1,467 +1,291 @@
-const express = require('express');
-const cors = require('cors');
+/**
+ * AegisAI — Unified Express Backend  (v3 — TEXT-ID schema)
+ * Run:  npm run dev   (nodemon) | npm start (node)
+ *
+ * Schema decisions for hackathon reliability:
+ *  - All primary keys are TEXT (we write UUIDs into them via crypto.randomUUID())
+ *  - No strict UUID column type → eliminates "invalid input syntax for type uuid"
+ *  - users.balance (NUMERIC) tracks real earned balance, seeded at ₹1250
+ */
+
+'use strict';
+
+const express  = require('express');
+const cors     = require('cors');
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
+const bcrypt   = require('bcrypt');
+const { randomUUID } = require('crypto');
 require('dotenv').config();
 
+// ── Route modules ──────────────────────────────────────────────────────────────
+const riskModule     = require('./routes/risk');
+const policiesModule = require('./routes/policies');
+const payoutsModule  = require('./routes/payouts');
+const { router: riskRouter, state: riskState } = riskModule;
+
+// ── Config ─────────────────────────────────────────────────────────────────────
+const PORT           = parseInt(process.env.PORT  || '8000', 10);
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
+const DATABASE_URL   = process.env.DATABASE_URL;
+
+// ── Database pool ──────────────────────────────────────────────────────────────
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+// Wire pool into feature routers before routes are registered
+riskModule.setPool(pool);
+policiesModule.setPool(pool);
+payoutsModule.setPool(pool);
+
+// ── Express app ────────────────────────────────────────────────────────────────
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: ALLOWED_ORIGIN,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
-const PORT = process.env.PORT || 8000;
+// ─────────────────────────────────────────────────────────────────────────────
+// DB INIT — TEXT-based schema + smart migration + test-user seed
+// ─────────────────────────────────────────────────────────────────────────────
+async function initDB() {
+  try {
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
+    // Detect existing schema type for users.id
+    const colCheck = await pool.query(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'id'
+    `);
+
+    const existingType = colCheck.rows[0]?.data_type ?? null;
+
+    if (existingType && existingType !== 'text') {
+      // Old schema (integer SERIAL or UUID) — wipe and recreate with TEXT
+      console.log(`⚠️  Detected incompatible schema (${existingType}). Migrating to TEXT IDs...`);
+      await pool.query(`DROP TABLE IF EXISTS claims   CASCADE`);
+      await pool.query(`DROP TABLE IF EXISTS policies CASCADE`);
+      await pool.query(`DROP TABLE IF EXISTS users    CASCADE`);
+      console.log('🗑️  Old tables dropped. Recreating...');
+    }
+
+    // ── users ──────────────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id               TEXT PRIMARY KEY,
+        name             VARCHAR(100)  NOT NULL,
+        phone            VARCHAR(20)   UNIQUE NOT NULL,
+        password_hash    TEXT          NOT NULL,
+        zone             VARCHAR(100)  DEFAULT 'Sector 62, Noida',
+        upi_id           VARCHAR(100),
+        aadhaar_number   VARCHAR(12),
+        aadhaar_verified BOOLEAN       NOT NULL DEFAULT FALSE,
+        balance          NUMERIC(12,2) NOT NULL DEFAULT 1250.00,
+        created_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // Add balance column if it was missing (safe no-op if it exists)
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) NOT NULL DEFAULT 1250.00
+    `).catch(() => {});
+
+    // ── policies ───────────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS policies (
+        id                TEXT PRIMARY KEY,
+        user_id           TEXT          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        tier_name         VARCHAR(20)   NOT NULL,
+        policy_start_date TIMESTAMPTZ   NOT NULL,
+        policy_end_date   TIMESTAMPTZ   NOT NULL,
+        premium_amount    NUMERIC(10,2) NOT NULL,
+        coverage_amount   NUMERIC(10,2) NOT NULL,
+        risk_level        VARCHAR(10)   NOT NULL,
+        status            VARCHAR(10)   NOT NULL DEFAULT 'active',
+        created_at        TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    // ── claims ─────────────────────────────────────────────────────────────────
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS claims (
+        id            TEXT PRIMARY KEY,
+        user_id       TEXT          NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        policy_id     TEXT          NOT NULL REFERENCES policies(id) ON DELETE CASCADE,
+        event_type    VARCHAR(50)   NOT NULL,
+        payout_amount NUMERIC(10,2) NOT NULL,
+        status        VARCHAR(20)   NOT NULL,
+        created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+        UNIQUE (policy_id, event_type)
+      )
+    `);
+
+    console.log('✅  Database tables ready (TEXT-ID schema)');
+
+    // ── Seed default test user ─────────────────────────────────────────────────
+    const existing = await pool.query(`SELECT id FROM users WHERE phone = $1`, ['1234567890']);
+    if (existing.rows.length === 0) {
+      const hash = await bcrypt.hash('123456', 10);
+      await pool.query(
+        `INSERT INTO users (id, name, phone, password_hash, zone, balance)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [randomUUID(), 'Demo User', '1234567890', hash, 'Sector 62, Noida', 1250]
+      );
+      console.log('🌱  Test user seeded  →  phone: 1234567890 | password: 123456');
+    }
+
+  } catch (err) {
+    console.error('❌  DB init error:', err.message);
   }
-});
-
-const POLICY_TIERS = {
-  low: { tierName: 'Basic', premiumAmount: 15, coverageAmount: 1000 },
-  medium: { tierName: 'Standard', premiumAmount: 25, coverageAmount: 2000 },
-  high: { tierName: 'Extended', premiumAmount: 35, coverageAmount: 3000 }
-};
-
-let currentRainLevel = 0;
-let isDisrupted = false;
-
-async function initializeDatabase() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(100),
-      phone VARCHAR(20) UNIQUE,
-      password_hash TEXT,
-      aadhaar VARCHAR(50),
-      dl VARCHAR(50),
-      rc VARCHAR(50),
-      zone VARCHAR(100),
-      upi_id VARCHAR(100)
-    )
-  `);
-
-  await pool.query(`
-    ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS aadhaar_number VARCHAR(12),
-    ADD COLUMN IF NOT EXISTS aadhaar_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  `);
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS policies (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      tier_name VARCHAR(20) NOT NULL,
-      policy_start_date TIMESTAMPTZ NOT NULL,
-      policy_end_date TIMESTAMPTZ NOT NULL,
-      premium_amount NUMERIC(10, 2) NOT NULL,
-      coverage_amount NUMERIC(10, 2) NOT NULL,
-      risk_level VARCHAR(10) NOT NULL CHECK (risk_level IN ('low', 'medium', 'high')),
-      status VARCHAR(10) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired')),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  await pool.query(`
-    CREATE UNIQUE INDEX IF NOT EXISTS ux_policies_one_active_per_user
-    ON policies (user_id)
-    WHERE status = 'active'
-  `);
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS claims (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      policy_id INTEGER NOT NULL REFERENCES policies(id) ON DELETE CASCADE,
-      event_type VARCHAR(50) NOT NULL,
-      payout_amount NUMERIC(10, 2) NOT NULL,
-      status VARCHAR(20) NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE (policy_id, event_type)
-    )
-  `);
-
-  console.log('Postgres DB initialized');
 }
 
-async function expirePolicies() {
-  await pool.query(`
-    UPDATE policies
-    SET status = 'expired'
-    WHERE status = 'active' AND policy_end_date <= NOW()
-  `);
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function safeUser(row) {
+  if (!row) return null;
+  const u = { ...row };
+  delete u.password_hash;
+  u.balance = parseFloat(u.balance ?? 1250);
+  return u;
 }
 
-async function getActivePolicy(userId) {
-  await expirePolicies();
-  const result = await pool.query(
-    `SELECT *
-     FROM policies
-     WHERE user_id = $1 AND status = 'active'
-     ORDER BY policy_end_date DESC
-     LIMIT 1`,
-    [userId]
-  );
-  return result.rows[0] || null;
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// HEALTH
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
-function formatPolicy(policy) {
-  const endDate = new Date(policy.policy_end_date);
-  const now = new Date();
-  const msLeft = Math.max(endDate.getTime() - now.getTime(), 0);
-  const daysRemaining = msLeft === 0 ? 0 : Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH ROUTES
+// ─────────────────────────────────────────────────────────────────────────────
 
-  return {
-    id: policy.id,
-    tier_name: policy.tier_name,
-    premium: Number(policy.premium_amount),
-    coverage: Number(policy.coverage_amount),
-    risk_level: policy.risk_level,
-    days_remaining: daysRemaining,
-    status: policy.status,
-    policy_start_date: policy.policy_start_date,
-    policy_end_date: policy.policy_end_date
-  };
-}
-
-async function createClaim({ user, policy, eventType, hourlyRate, disruptionHours }) {
-  if (!user.aadhaar_verified) {
-    const error = new Error('Verify Aadhaar before claiming a payout');
-    error.status = 403;
-    throw error;
-  }
-
-  await expirePolicies();
-  const latestPolicy = await getActivePolicy(user.id);
-  if (!latestPolicy || latestPolicy.id !== policy.id) {
-    const error = new Error('Policy is no longer active');
-    error.status = 400;
-    throw error;
-  }
-
-  const duplicateClaim = await pool.query(
-    'SELECT id FROM claims WHERE policy_id = $1 AND event_type = $2',
-    [policy.id, eventType]
-  );
-
-  if (duplicateClaim.rows.length > 0) {
-    const error = new Error('Claim already processed for this event');
-    error.status = 409;
-    throw error;
-  }
-
-  const payoutAmount = Math.min(Number(hourlyRate) * Number(disruptionHours), Number(policy.coverage_amount));
-
-  const claimResult = await pool.query(
-    `INSERT INTO claims (user_id, policy_id, event_type, payout_amount, status)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING *`,
-    [user.id, policy.id, eventType, payoutAmount, 'auto_paid']
-  );
-
-  return claimResult.rows[0];
-}
-
-app.get('/api/risk-status', (req, res) => {
-  res.json({
-    zone: 'Sector 62, Noida',
-    rainLevel: currentRainLevel,
-    isDisrupted,
-    payoutAmount: isDisrupted ? 450 : 0,
-    status: isDisrupted ? 'CRITICAL' : 'STABLE'
-  });
-});
-
+// POST /api/signup
 app.post('/api/signup', async (req, res) => {
   const { name, phone, password, zone, upi } = req.body;
-
   if (!name || !phone || !password) {
-    return res.status(400).json({ error: 'Required fields missing' });
+    return res.status(400).json({ error: 'Name, phone, and password are required' });
   }
-
   try {
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      `INSERT INTO users (name, phone, password_hash, zone, upi_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, phone, zone, upi_id, aadhaar_number, aadhaar_verified`,
-      [name, phone, hash, zone, upi]
+      `INSERT INTO users (id, name, phone, password_hash, zone, upi_id, balance)
+       VALUES ($1,$2,$3,$4,$5,$6,1250) RETURNING *`,
+      [randomUUID(), name, phone, hash, zone || 'Sector 62, Noida', upi || null]
     );
-
-    res.status(201).json({ message: 'Registration successful', user: result.rows[0] });
-  } catch (error) {
-    if (error.code === '23505') {
-      return res.status(409).json({ error: 'Phone number already registered' });
-    }
-    res.status(500).json({ error: error.message });
+    return res.status(201).json({ message: 'Registration successful', user: safeUser(result.rows[0]) });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'Phone number already registered' });
+    return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/signin', async (req, res) => {
+// POST /api/signin  (also aliased as /api/login)
+async function handleSignIn(req, res) {
   const { phone, password } = req.body;
-
+  if (!phone || !password) {
+    return res.status(400).json({ error: 'Phone and password are required' });
+  }
   try {
-    const result = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
+    const result = await pool.query('SELECT * FROM users WHERE phone=$1', [phone]);
     if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(401).json({ error: 'User not found. Please sign up first.' });
     }
-
     const user = result.rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      return res.status(401).json({ error: 'Invalid password' });
-    }
-
-    delete user.password_hash;
-    res.json({ message: 'Logged in successfully', user });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    if (!valid) return res.status(401).json({ error: 'Invalid password' });
+    return res.json({ message: 'Logged in successfully', user: safeUser(user) });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
-});
+}
+app.post('/api/signin', handleSignIn);
+app.post('/api/login',  handleSignIn);   // alias used by some components
 
+// POST /api/update-settings
 app.post('/api/update-settings', async (req, res) => {
   const { phone, name, zone, upi_id } = req.body;
-
-  if (!phone) {
-    return res.status(400).json({ error: 'Phone number required to identify user' });
-  }
-
+  if (!phone) return res.status(400).json({ error: 'Phone number required' });
   try {
     await pool.query(
       `UPDATE users
-       SET name = COALESCE($1, name),
-           zone = COALESCE($2, zone),
-           upi_id = COALESCE($3, upi_id)
-       WHERE phone = $4`,
-      [name, zone, upi_id, phone]
+          SET name   = COALESCE($1, name),
+              zone   = COALESCE($2, zone),
+              upi_id = COALESCE($3, upi_id)
+        WHERE phone = $4`,
+      [name || null, zone || null, upi_id || null, phone]
     );
-
-    const result = await pool.query(
-      `SELECT id, name, phone, zone, upi_id, aadhaar_number, aadhaar_verified
-       FROM users
-       WHERE phone = $1`,
-      [phone]
-    );
-
-    res.json({ message: 'Settings updated successfully', user: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const result = await pool.query('SELECT * FROM users WHERE phone=$1', [phone]);
+    return res.json({ message: 'Settings updated successfully', user: safeUser(result.rows[0]) });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/user/verify-aadhaar', async (req, res) => {
-  const { user_id, aadhaar_number } = req.body;
-
-  if (!/^\d{12}$/.test(String(aadhaar_number || ''))) {
-    return res.status(400).json({ error: 'Aadhaar number must be exactly 12 digits' });
-  }
-
+// GET /api/user/:id  — re-fetch fresh user data (used after simulate to update balance)
+app.get('/api/user/:id', async (req, res) => {
   try {
-    const result = await pool.query(
-      `UPDATE users
-       SET aadhaar_number = $1, aadhaar_verified = TRUE
-       WHERE id = $2
-       RETURNING id, name, phone, zone, upi_id, aadhaar_number, aadhaar_verified`,
-      [aadhaar_number, user_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({ message: 'Aadhaar verified successfully', user: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const result = await pool.query('SELECT * FROM users WHERE id=$1', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    return res.json({ user: safeUser(result.rows[0]) });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/policy/purchase', async (req, res) => {
-  const { user_id, selected_tier } = req.body;
-  const normalizedTier = String(selected_tier || '').toLowerCase();
-  const tier = POLICY_TIERS[normalizedTier];
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURE ROUTERS
+// ─────────────────────────────────────────────────────────────────────────────
 
-  if (!tier) {
-    return res.status(400).json({ error: 'selected_tier must be low, medium, or high' });
-  }
+// Risk / weather / simulate
+app.use('/api/risk',  riskRouter);
+app.use('/api/admin', riskRouter);          // /api/admin/trigger-event
 
-  try {
-    const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+// Legacy alias GET /api/risk-status
+app.get('/api/risk-status', (_req, res) => res.json({
+  zone: 'Sector 62, Noida',
+  rainLevel:   riskState.rainLevel,
+  isDisrupted: riskState.isDisrupted,
+  payoutAmount: riskState.isDisrupted ? Math.round(riskState.hourlyRate * riskState.disruptionHours) : 0,
+  status: riskState.isDisrupted ? 'CRITICAL' : 'STABLE',
+}));
 
-    const existingPolicy = await getActivePolicy(user_id);
-    if (existingPolicy) {
-      return res.status(409).json({ error: 'You already have an active policy' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO policies (
-        user_id, tier_name, policy_start_date, policy_end_date,
-        premium_amount, coverage_amount, risk_level, status
-      )
-      VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days', $3, $4, $5, 'active')
-      RETURNING *`,
-      [user_id, tier.tierName, tier.premiumAmount, tier.coverageAmount, normalizedTier]
-    );
-
-    res.status(201).json({
-      message: 'Policy Activated for 7 Days',
-      policy: formatPolicy(result.rows[0])
-    });
-  } catch (error) {
-    if (error.code === '23505') {
-      return res.status(409).json({ error: 'You already have an active policy' });
-    }
-    res.status(500).json({ error: error.message });
-  }
+// /api/simulate → forward to trigger-event
+app.post('/api/simulate', (req, res, next) => {
+  const rain = typeof req.body.rain === 'number' ? req.body.rain : 12;
+  req.body = { event_type: 'heavy_rain', rain, disruption_hours: rain > 8 ? 3 : 0, hourly_rate: 150 };
+  req.url = '/trigger-event';
+  riskRouter(req, res, next);
 });
 
-app.get('/api/policy/active/:userId', async (req, res) => {
-  try {
-    const policy = await getActivePolicy(req.params.userId);
-    if (!policy) {
-      return res.status(404).json({ error: 'No active policy' });
-    }
+// Policies
+app.use('/api/policy', policiesModule.router);
+app.use('/api/user',   policiesModule.router);   // /api/user/verify-aadhaar
 
-    res.json(formatPolicy(policy));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Claims / payouts
+app.use('/api/claim',  payoutsModule.router);
+app.use('/api/claims', payoutsModule.router);
 
-app.get('/api/claims/:userId', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT id, user_id, policy_id, event_type, payout_amount, status, created_at
-       FROM claims
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [req.params.userId]
-    );
-
-    res.json({
-      claims: result.rows.map((claim) => ({
-        ...claim,
-        payout_amount: Number(claim.payout_amount)
-      }))
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/claim/submit', async (req, res) => {
-  const { user_id, policy_id, event_type, hourly_rate, disruption_hours } = req.body;
-
-  try {
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user_id]);
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const policyResult = await pool.query('SELECT * FROM policies WHERE id = $1 AND user_id = $2', [policy_id, user_id]);
-    if (policyResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Policy not found for user' });
-    }
-
-    const claim = await createClaim({
-      user: userResult.rows[0],
-      policy: policyResult.rows[0],
-      eventType: event_type,
-      hourlyRate: hourly_rate,
-      disruptionHours: disruption_hours
-    });
-
-    res.json({
-      message: 'Claim processed successfully',
-      claim: {
-        ...claim,
-        payout_amount: Number(claim.payout_amount)
-      }
-    });
-  } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
-  }
-});
-
-app.post('/api/admin/trigger-event', async (req, res) => {
-  const {
-    event_type = 'heavy_rain',
-    rain = 12,
-    disruption_hours = 3,
-    hourly_rate = 150
-  } = req.body;
-
-  currentRainLevel = Number(rain) || 0;
-  isDisrupted = currentRainLevel > 8 && Number(disruption_hours) > 0;
-
-  try {
-    await expirePolicies();
-    const generatedClaims = [];
-
-    if (isDisrupted) {
-      const activePolicies = await pool.query(
-        `SELECT p.*, u.aadhaar_verified, u.aadhaar_number, u.name, u.phone, u.zone, u.upi_id, u.id AS user_id_ref
-         FROM policies p
-         JOIN users u ON u.id = p.user_id
-         WHERE p.status = 'active'`
-      );
-
-      for (const policy of activePolicies.rows) {
-        const user = {
-          id: policy.user_id_ref,
-          aadhaar_verified: policy.aadhaar_verified
-        };
-
-        try {
-          const claim = await createClaim({
-            user,
-            policy,
-            eventType: event_type,
-            hourlyRate: hourly_rate,
-            disruptionHours: disruption_hours
-          });
-
-          generatedClaims.push({
-            claim_id: claim.id,
-            user_id: claim.user_id,
-            policy_id: claim.policy_id,
-            payout_amount: Number(claim.payout_amount)
-          });
-        } catch (error) {
-          if (![403, 409].includes(error.status)) {
-            throw error;
-          }
-        }
-      }
-    }
-
-    res.json({
-      message: 'System state updated',
-      isDisrupted,
-      rainLevel: currentRainLevel,
-      claimsGenerated: generatedClaims
-    });
-  } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
-  }
-});
-
-app.post('/api/simulate-disruption', async (req, res) => {
-  const rain = Number(req.body.rain) || 0;
-  currentRainLevel = rain;
-  isDisrupted = rain > 8;
-  res.json({ message: 'System state updated', isDisrupted });
-});
-
-initializeDatabase()
-  .catch((error) => {
-    console.error('DB Init Error:', error.message);
-  })
-  .finally(() => {
-    app.listen(PORT, () => {
-      console.log(`AegisAI Backend running on http://localhost:${PORT}`);
-    });
+// ─────────────────────────────────────────────────────────────────────────────
+// START
+// ─────────────────────────────────────────────────────────────────────────────
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n🚀  AegisAI Backend  →  http://localhost:${PORT}`);
+    console.log(`    CORS: ${ALLOWED_ORIGIN}`);
+    console.log('    ─────────────────────────────────────────');
+    console.log('    GET  /api/health');
+    console.log('    GET  /api/risk/status');
+    console.log('    POST /api/simulate           ← Heavy Rain trigger');
+    console.log('    POST /api/signup | signin | login | update-settings');
+    console.log('    GET  /api/user/:id           ← refresh user (balance)');
+    console.log('    POST /api/policy/purchase');
+    console.log('    GET  /api/policy/active/:user_id');
+    console.log('    POST /api/user/verify-aadhaar');
+    console.log('    POST /api/claim/submit');
+    console.log('    GET  /api/claims/:user_id');
+    console.log('    ─────────────────────────────────────────\n');
   });
+});

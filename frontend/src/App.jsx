@@ -1,9 +1,13 @@
-import React, { startTransition, useEffect, useState } from 'react';
+import React, { startTransition, useEffect, useRef, useState } from 'react';
 import LandingPage from './pages/Landing';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import WorkerDashboard from './pages/WorkerDashboard';
 import { apiRequest } from './lib/api';
+
+// UUID v4 pattern – used to detect stale integer-based sessions
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isValidUUID = (v) => UUID_RE.test(String(v ?? ''));
 
 const GUEST_USER = {
   name: 'Guest User',
@@ -15,24 +19,45 @@ const GUEST_USER = {
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
-    const saved = localStorage.getItem('aegis_current_page');
-    return saved === 'dashboard' ? 'dashboard' : 'landing';
+    // If there's a stale session with a non-UUID id, start on landing
+    const saved = localStorage.getItem('aegis_user_data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed?.id && !isValidUUID(parsed.id)) {
+          // Stale integer-based session from old backend – clear it
+          localStorage.removeItem('aegis_user_data');
+          localStorage.removeItem('aegis_current_page');
+          return 'signin';
+        }
+      } catch { /* ignore */ }
+    }
+    const page = localStorage.getItem('aegis_current_page');
+    return page === 'dashboard' ? 'dashboard' : 'landing';
   });
   const [activeTab, setActiveTab] = useState('overview');
   const [isDisrupted, setIsDisrupted] = useState(false);
   const [rainLevel, setRainLevel] = useState(0);
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('aegis_user_data');
-    return saved ? { ...GUEST_USER, ...JSON.parse(saved) } : GUEST_USER;
+    if (!saved) return GUEST_USER;
+    try {
+      const parsed = JSON.parse(saved);
+      // Guard: reject stale integer IDs
+      if (parsed?.id && !isValidUUID(parsed.id)) return GUEST_USER;
+      return { ...GUEST_USER, ...parsed };
+    } catch { return GUEST_USER; }
   });
   const [activePolicy, setActivePolicy] = useState(null);
   const [claims, setClaims] = useState([]);
   const [isEventLoading, setIsEventLoading] = useState(false);
+  const [payoutToast, setPayoutToast] = useState(null); // { count, amount }
+  const payoutToastTimer = useRef(null);
 
   useEffect(() => {
     const loadRiskStatus = async () => {
       try {
-        const data = await apiRequest('/api/risk-status');
+        const data = await apiRequest('/api/risk/status');
         setIsDisrupted(Boolean(data.isDisrupted));
         setRainLevel(Number(data.rainLevel || 0));
       } catch (error) {
@@ -104,6 +129,12 @@ function App() {
     if (!user?.id) {
       throw new Error('Please sign in again before activating a shield.');
     }
+    if (!isValidUUID(user.id)) {
+      // Stale session detected at purchase time – force re-login
+      localStorage.removeItem('aegis_user_data');
+      updateSessionUser(null);
+      throw new Error('Your session has expired. Please sign out and sign back in.');
+    }
 
     const data = await apiRequest('/api/policy/purchase', {
       method: 'POST',
@@ -147,8 +178,27 @@ function App() {
       setIsDisrupted(Boolean(data.isDisrupted));
       setRainLevel(Number(data.rainLevel || 0));
 
-      if (user?.id) {
-        await refreshProtectionData(user.id);
+      // Show payout toast if claims were auto-generated
+      const realClaims = (data.claimsGenerated || []).filter(c => !c.note);
+      if (data.isDisrupted && realClaims.length > 0) {
+        const totalPayout = realClaims.reduce((sum, c) => sum + (c.payout_amount || 0), 0);
+        setPayoutToast({ count: realClaims.length, amount: totalPayout });
+        clearTimeout(payoutToastTimer.current);
+        payoutToastTimer.current = setTimeout(() => setPayoutToast(null), 5000);
+      }
+
+      // Refresh protection data + fetch fresh user (with updated balance)
+      if (user?.id && isValidUUID(user.id)) {
+        setTimeout(async () => {
+          await refreshProtectionData(user.id);
+          // Fetch updated balance from DB
+          try {
+            const freshData = await apiRequest(`/api/user/${user.id}`);
+            if (freshData?.user) {
+              setUser(prev => ({ ...prev, balance: freshData.user.balance }));
+            }
+          } catch { /* non-critical */ }
+        }, 600);
       }
     } catch (error) {
       console.error('Unable to trigger event', error);
@@ -240,6 +290,23 @@ function App() {
                 ? 'Reset Weather'
                 : 'Simulate Heavy Rain'}
           </button>
+        </div>
+      )}
+
+      {/* Auto-payout toast – appears after simulate generates claims */}
+      {payoutToast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-emerald-950/95 border border-emerald-500/40 backdrop-blur-md px-6 py-4 rounded-[20px] shadow-2xl shadow-black/40 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <span className="text-emerald-400 text-lg">⚡</span>
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Auto-Payout Processed</p>
+              <p className="text-sm font-bold text-emerald-100 mt-0.5">
+                ₹{payoutToast.amount.toFixed(0)} credited across {payoutToast.count} policy{payoutToast.count > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>
