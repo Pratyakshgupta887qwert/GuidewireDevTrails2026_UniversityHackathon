@@ -3,6 +3,12 @@
 
 ---
 
+## 🚀 Live Demo
+- **Frontend (Vercel):** [https://aegis-ai.vercel.app](https://aegis-ai.vercel.app)
+- **Backend (Render):** [https://aegis-ai-backend.onrender.com](https://aegis-ai-backend.onrender.com)
+
+---
+
 ## ⚡ The Reality
 
 A delivery worker starts his day expecting ₹800.

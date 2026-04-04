@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Terminal, Lock, Phone, Eye, EyeOff, AlertTriangle, ChevronRight } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+import { API_BASE_URL } from '../lib/api';
 
 const AdminLogin = ({ onAdminLogin, onBack }) => {
   const [phone,    setPhone]    = useState('');
@@ -15,7 +15,7 @@ const AdminLogin = ({ onAdminLogin, onBack }) => {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/admin/login`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, password }),
