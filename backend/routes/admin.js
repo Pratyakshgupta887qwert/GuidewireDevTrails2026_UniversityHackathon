@@ -98,6 +98,8 @@ router.get('/users', async (_req, res) => {
         u.working_hours,
         u.is_flagged,
         u.last_location,
+        u.vehicle_number,
+        u.partner_platform,
         u.created_at,
         COUNT(DISTINCT p.id) FILTER (WHERE p.status = 'active') AS active_policies,
         COUNT(DISTINCT c.id)                                    AS total_claims
@@ -121,6 +123,8 @@ router.get('/users', async (_req, res) => {
         working_hours: Number(r.working_hours),
         is_flagged: Boolean(r.is_flagged),
         last_location: r.last_location || null,
+        vehicle_number: r.vehicle_number || null,
+        partner_platform: r.partner_platform || null,
         active_policies: Number(r.active_policies),
         total_claims: Number(r.total_claims),
         created_at: r.created_at,

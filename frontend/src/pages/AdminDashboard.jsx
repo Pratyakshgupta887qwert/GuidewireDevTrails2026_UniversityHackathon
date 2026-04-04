@@ -243,13 +243,27 @@ function WorkersTab({ workers, onFlag }) {
   return (
     <div className="space-y-4">
       <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name or phone…" className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder:text-slate-600 outline-none focus:border-blue-500/60"/>
-      <Table cols={['Worker','Phone','Zone','Aadhaar','Policies','Claims','Balance','Trust','Action']}>
-        {filtered.length===0 ? <EmptyRow cols={9} msg="No workers found"/> : filtered.map(w=>{
+      <Table cols={['Worker','Phone','Platform','Zone','Aadhaar','Policies','Claims','Balance','Trust','Action']}>
+        {filtered.length===0 ? <EmptyRow cols={10} msg="No workers found"/> : filtered.map(w=>{
           const f=fraudSignals(w.id);
           return (
             <tr key={w.id} className="border-b border-slate-800/60 hover:bg-slate-800/20 transition-colors">
               <Td><span className="font-bold text-slate-200">{w.name}</span></Td>
               <Td><span className="font-mono text-xs text-slate-400">{w.phone}</span></Td>
+              <Td>
+                {w.partner_platform ? (
+                  <span 
+                    className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border"
+                    style={{
+                      backgroundColor: getPartnerColor(w.partner_platform, 0.1),
+                      color: getPartnerColor(w.partner_platform, 1),
+                      borderColor: getPartnerColor(w.partner_platform, 0.3)
+                    }}
+                  >
+                    {w.partner_platform}
+                  </span>
+                ) : <span className="text-slate-600 text-[10px]">None</span>}
+              </Td>
               <Td><span className="text-slate-400 text-xs">{w.zone||'—'}</span></Td>
               <Td>{w.aadhaar_verified?<Badge color="emerald">Verified</Badge>:<Badge color="slate">Pending</Badge>}</Td>
               <Td><span className="font-bold text-blue-400">{w.active_policies}</span></Td>
@@ -709,3 +723,15 @@ function EmptyRow({ cols, msg }) {
 }
 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN',{dateStyle:'short'}) : '—';
+
+const getPartnerColor = (platform, opacity = 1) => {
+  const colors = {
+    'Swiggy': `rgba(252, 128, 25, ${opacity})`,
+    'Zomato': `rgba(226, 55, 68, ${opacity})`,
+    'Amazon': `rgba(255, 153, 0, ${opacity})`,
+    'Flipkart': `rgba(40, 116, 240, ${opacity})`,
+    'Zepto': `rgba(85, 16, 139, ${opacity})`,
+    'Other': `rgba(100, 116, 139, ${opacity})`
+  };
+  return colors[platform] || colors['Other'];
+};

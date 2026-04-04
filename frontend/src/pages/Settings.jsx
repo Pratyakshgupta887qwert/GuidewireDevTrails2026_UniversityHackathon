@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, MapPin, Save, Shield, User, Wallet } from 'lucide-react';
+import { Briefcase, CheckCircle2, MapPin, Save, Shield, Truck, User, Wallet } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 import { SUPPORTED_CITIES, formatCurrency } from '../lib/insurance';
 
@@ -8,6 +8,8 @@ const Settings = ({ user, setUser }) => {
     name: user.name || '',
     city: user.city || '',
     pan_card: user.pan_card || '',
+    vehicle_number: user.vehicle_number || '',
+    partner_platform: user.partner_platform || '',
     avg_daily_income: user.avg_daily_income || 1200,
     working_hours: user.working_hours || 10,
   });
@@ -17,9 +19,10 @@ const Settings = ({ user, setUser }) => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    const nextValue = (name === 'pan_card' || name === 'vehicle_number') ? value.toUpperCase() : value;
     setFormData((current) => ({
       ...current,
-      [name]: name === 'pan_card' ? value.toUpperCase() : value,
+      [name]: nextValue,
     }));
   };
 
@@ -30,9 +33,10 @@ const Settings = ({ user, setUser }) => {
     setError('');
 
     try {
-      const data = await apiRequest('/api/update-settings', {
-        method: 'POST',
+      const data = await apiRequest('/api/user/update', {
+        method: 'PUT',
         body: JSON.stringify({
+          id: user.id,
           phone: user.phone,
           ...formData,
         }),
@@ -74,6 +78,8 @@ const Settings = ({ user, setUser }) => {
 
           <div className="grid gap-4 mt-8">
             <MiniStat icon={<MapPin size={18} />} label="City" value={user.city || 'Not selected'} />
+            <MiniStat icon={<Truck size={18} />} label="Vehicle" value={user.vehicle_number || 'Not added'} />
+            <MiniStat icon={<Briefcase size={18} />} label="Partner" value={user.partner_platform || 'Not added'} />
             <MiniStat icon={<Wallet size={18} />} label="Daily Income" value={formatCurrency(user.avg_daily_income || 0)} />
             <MiniStat icon={<User size={18} />} label="Working Hours" value={`${Number(user.working_hours || 0)} hrs`} />
           </div>
@@ -112,6 +118,32 @@ const Settings = ({ user, setUser }) => {
               ))}
             </select>
           </SettingField>
+          
+          <div className="grid md:grid-cols-2 gap-4">
+            <SettingField label="Vehicle Number">
+              <input
+                name="vehicle_number"
+                value={formData.vehicle_number}
+                onChange={handleChange}
+                placeholder="UP00 AB 1234"
+                className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-4 py-4 text-sm font-bold text-slate-200 focus:outline-none focus:border-blue-500"
+              />
+            </SettingField>
+            
+            <SettingField label="Delivery Partner">
+              <select
+                name="partner_platform"
+                value={formData.partner_platform}
+                onChange={handleChange}
+                className="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-4 py-4 text-sm font-bold text-slate-200 focus:outline-none focus:border-blue-500"
+              >
+                <option value="" disabled>Select partner</option>
+                {['Swiggy', 'Zomato', 'Amazon', 'Flipkart', 'Zepto', 'Other'].map((p) => (
+                  <option key={p} value={p} className="bg-slate-900 text-slate-200">{p}</option>
+                ))}
+              </select>
+            </SettingField>
+          </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <SettingField label="Average Daily Income">
