@@ -135,7 +135,7 @@ const WorkerDashboard = ({
           <SidebarItem icon={<Shield size={20} />} label="Policy Tiers" active={activeTab === 'policy'} onClick={() => setActiveTab('policy')} />
           <SidebarItem icon={<History size={20} />} label="Payout History" active={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
           <SidebarItem icon={<Bell size={20} />} label="Notifications" active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} />
-          <SidebarItem icon={<Wallet size={20} />} label="Earnings" active={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')} />
+          <SidebarItem icon={<Wallet size={20} />} label="Payout and Premium" active={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')} />
           <SidebarItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
         </nav>
 
