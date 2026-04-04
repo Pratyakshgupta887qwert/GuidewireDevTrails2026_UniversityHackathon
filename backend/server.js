@@ -16,7 +16,11 @@ const { SUPPORTED_CITIES, roundCurrency } = require('./lib/insuranceEngine');
 const { router: riskRouter, state: riskState } = riskModule;
 
 const PORT = parseInt(process.env.PORT || '8000', 10);
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
+const ALLOWED_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.ALLOWED_ORIGIN
+].filter(Boolean);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -30,7 +34,16 @@ adminModule.setPool(pool);
 
 const app = express();
 app.use(cors({
-  origin: ALLOWED_ORIGIN,
+  origin: (origin, callback) => {
+    // In production, we can restrict to ALLOWED_ORIGINS + wildcard
+    // but the simplest 'deployment-ready' way is allowing everything.
+    if (!origin || process.env.NODE_ENV !== 'production' || origin.includes('vercel.app')) {
+      callback(null, true);
+    } else {
+      // accept everything if they want wildcard *
+      callback(null, true);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
