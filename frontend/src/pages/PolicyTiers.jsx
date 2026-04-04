@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PolicyMarket from './PolicyMarket';
 
-const PolicyTiers = ({ activePolicy, onPurchasePolicy, onPolicyActivated }) => {
+const PolicyTiers = ({ user, activePolicy, onPurchasePolicy, onPolicyActivated }) => {
   const [loadingTier, setLoadingTier] = useState('');
   const [error, setError] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -41,6 +41,7 @@ const PolicyTiers = ({ activePolicy, onPurchasePolicy, onPolicyActivated }) => {
       )}
 
       <PolicyMarket
+        user={user}
         onPurchase={handlePurchase}
         purchaseLoadingTier={loadingTier}
         activePolicy={activePolicy}
