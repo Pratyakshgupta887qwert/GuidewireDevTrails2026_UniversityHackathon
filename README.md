@@ -12,8 +12,7 @@ As the project progresses into later phases, we plan to expand this prototype wi
 ---
 
 ## 🚀 Live Demo
-- **Frontend (Vercel):** [https://aegis-ai.vercel.app](https://aegis-ai.vercel.app)
-- **Backend (Render):** [https://aegis-ai-backend.onrender.com](https://aegis-ai-backend.onrender.com)
+- **Frontend (Vercel) + Backend (Render) :** (https://guidewire-dev-trails2026-university.vercel.app/)
 
 ---
 
