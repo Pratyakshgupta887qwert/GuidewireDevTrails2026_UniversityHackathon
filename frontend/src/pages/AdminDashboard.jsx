@@ -6,9 +6,10 @@ import {
   XCircle, Flag, RefreshCw, Send, Eye, TrendingUp, DollarSign
 } from 'lucide-react';
 
-const API = 'http://localhost:8000';
+import { API_BASE_URL } from '../lib/api';
+
 const api = async (url, opts = {}) => {
-  const r = await fetch(`${API}${url}`, { headers: { 'Content-Type': 'application/json' }, ...opts });
+  const r = await fetch(`${API_BASE_URL}${url}`, { headers: { 'Content-Type': 'application/json' }, ...opts });
   return r.json();
 };
 

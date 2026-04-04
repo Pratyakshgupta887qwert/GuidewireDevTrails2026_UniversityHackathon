@@ -2,6 +2,11 @@
   "hash": "41f3378f",
   "configHash": "f214a9f4",
   "lockfileHash": "10c99359",
+<<<<<<< HEAD
+  "browserHash": "dae02649",
+  "optimized": {},
+  "chunks": {}
+=======
   "browserHash": "f8a6fe30",
   "optimized": {
     "lucide-react": {
@@ -35,4 +40,5 @@
       "isDynamicEntry": false
     }
   }
+>>>>>>> 626903b878efaaaff78e91c47d0e01b347c0d942
 }
