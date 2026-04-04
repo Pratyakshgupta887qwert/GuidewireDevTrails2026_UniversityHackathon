@@ -58,21 +58,23 @@ export default function AdminDashboard({ onLogout }) {
         api('/api/admin/notifications'),
         api('/api/admin/settings'),
       ]);
-      if(s.treasury) setStats(s);
-      setWorkers(w.users||[]);
-      setPolicies(p.policies||[]);
-      setClaims(c.payouts||[]);
-      setLogs(l.logs||[]);
-      setNotifs(n.notifications||[]);
-      setSettings(st.settings||{});
-    } catch(e){console.error(e);}
+      // Always update stats — real DB may not have treasury key on first empty DB
+      setStats(s && !s.error ? s : null);
+      setWorkers(Array.isArray(w.users) ? w.users : []);
+      setPolicies(Array.isArray(p.policies) ? p.policies : []);
+      setClaims(Array.isArray(c.payouts) ? c.payouts : []);
+      setLogs(Array.isArray(l.logs) ? l.logs : []);
+      setNotifs(Array.isArray(n.notifications) ? n.notifications : []);
+      setSettings(st.settings || {});
+    } catch(e){ console.error('Admin load error:', e); }
     setLoading(false);
   }, []);
 
   useEffect(()=>{ load(); },[load]);
 
   const t = stats?.treasury || {};
-  const fraudWorkers = workers.filter(w=>{ const f=fraudSignals(w.id); return f.velocity>120||f.isMock; });
+  // Real fraud detection: DB is_flagged flag OR inconsistent last_location
+  const fraudWorkers = workers.filter(w => w.is_flagged || w.last_location === 'inconsistent');
 
   const NAV = [
     { id:'overview',   icon:<LayoutDashboard size={16}/>, label:'Overview' },

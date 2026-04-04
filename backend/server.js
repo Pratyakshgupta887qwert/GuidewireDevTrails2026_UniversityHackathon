@@ -10,6 +10,7 @@ require('dotenv').config();
 const riskModule = require('./routes/risk');
 const policiesModule = require('./routes/policies');
 const payoutsModule = require('./routes/payouts');
+const adminModule = require('./routes/admin');
 const { SUPPORTED_CITIES, roundCurrency } = require('./lib/insuranceEngine');
 
 const { router: riskRouter, state: riskState } = riskModule;
@@ -25,6 +26,7 @@ const pool = new Pool({
 riskModule.setPool(pool);
 policiesModule.setPool(pool);
 payoutsModule.setPool(pool);
+adminModule.setPool(pool);
 
 const app = express();
 app.use(cors({
@@ -117,6 +119,10 @@ async function initDB() {
     await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS risk_score NUMERIC(6,2) NOT NULL DEFAULT 0`);
     await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS multiplier NUMERIC(4,2) NOT NULL DEFAULT 1`);
     await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS city VARCHAR(50) NOT NULL DEFAULT 'Noida'`);
+
+    // Add fraud/location columns if not present
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN NOT NULL DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_location TEXT`);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS claims (
@@ -312,7 +318,7 @@ app.get('/api/user/:id', async (req, res) => {
 });
 
 app.use('/api/risk', riskRouter);
-app.use('/api/admin', riskRouter);
+app.use('/api/admin', adminModule.router);
 app.use('/api/policy', policiesModule.router);
 app.use('/api/user', policiesModule.router);
 app.use('/api/claim', payoutsModule.router);

@@ -30,6 +30,7 @@ import PolicyTiers from './PolicyTiers';
 import PayoutHistory from './PayoutHistory';
 import SettingsPage from './Settings';
 import NotificationsPage from './Notifications';
+import EarningsPage from './Earnings';
 import { formatCurrency, getRiskTone } from '../lib/insurance';
 
 const WorkerDashboard = ({
@@ -132,7 +133,7 @@ const WorkerDashboard = ({
           <SidebarItem icon={<Shield size={20} />} label="Policy Tiers" active={activeTab === 'policy'} onClick={() => setActiveTab('policy')} />
           <SidebarItem icon={<History size={20} />} label="Payout History" active={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
           <SidebarItem icon={<Bell size={20} />} label="Notifications" active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} />
-          <SidebarItem icon={<Wallet size={20} />} label="Earnings" active={activeTab === 'earnings'} onClick={() => setActiveTab('overview')} />
+          <SidebarItem icon={<Wallet size={20} />} label="Earnings" active={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')} />
           <SidebarItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
         </nav>
 
@@ -419,6 +420,10 @@ const WorkerDashboard = ({
           )}
 
           {activeTab === 'notifications' && <NotificationsPage />}
+
+          {activeTab === 'earnings' && (
+            <EarningsPage summary={summary} />
+          )}
 
           {activeTab === 'settings' && (
             <SettingsPage user={user} setUser={setUser} />
