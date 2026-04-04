@@ -10,6 +10,7 @@ require('dotenv').config();
 const riskModule = require('./routes/risk');
 const policiesModule = require('./routes/policies');
 const payoutsModule = require('./routes/payouts');
+const adminModule = require('./routes/admin');
 const { SUPPORTED_CITIES, roundCurrency } = require('./lib/insuranceEngine');
 
 const { router: riskRouter, state: riskState } = riskModule;
@@ -25,6 +26,7 @@ const pool = new Pool({
 riskModule.setPool(pool);
 policiesModule.setPool(pool);
 payoutsModule.setPool(pool);
+adminModule.setPool(pool);
 
 const app = express();
 app.use(cors({
@@ -82,6 +84,8 @@ async function initDB() {
         avg_daily_income NUMERIC(10,2) NOT NULL DEFAULT 1200,
         working_hours NUMERIC(5,2) NOT NULL DEFAULT 10,
         balance NUMERIC(12,2) NOT NULL DEFAULT 0,
+        vehicle_number VARCHAR(15),
+        partner_platform VARCHAR(50),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
@@ -95,6 +99,8 @@ async function initDB() {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avg_daily_income NUMERIC(10,2) NOT NULL DEFAULT 1200`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS working_hours NUMERIC(5,2) NOT NULL DEFAULT 10`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS balance NUMERIC(12,2) NOT NULL DEFAULT 0`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS vehicle_number VARCHAR(15)`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_platform VARCHAR(50)`);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS policies (
@@ -117,6 +123,10 @@ async function initDB() {
     await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS risk_score NUMERIC(6,2) NOT NULL DEFAULT 0`);
     await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS multiplier NUMERIC(4,2) NOT NULL DEFAULT 1`);
     await pool.query(`ALTER TABLE policies ADD COLUMN IF NOT EXISTS city VARCHAR(50) NOT NULL DEFAULT 'Noida'`);
+
+    // Add fraud/location columns if not present
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN NOT NULL DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_location TEXT`);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS claims (
@@ -172,6 +182,8 @@ app.post('/api/signup', async (req, res) => {
     city,
     avg_daily_income = 1200,
     working_hours = 10,
+    vehicle_number,
+    partner_platform,
     otp_verified = false,
   } = req.body;
 
@@ -201,9 +213,11 @@ app.post('/api/signup', async (req, res) => {
           phone_verified,
           avg_daily_income,
           working_hours,
+          vehicle_number,
+          partner_platform,
           balance
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,0)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,0)
         RETURNING *`,
       [
         randomUUID(),
@@ -216,6 +230,8 @@ app.post('/api/signup', async (req, res) => {
         Boolean(otp_verified),
         avg_daily_income,
         working_hours,
+        vehicle_number ? vehicle_number.toUpperCase() : null,
+        partner_platform,
       ]
     );
 
@@ -265,6 +281,8 @@ app.post('/api/update-settings', async (req, res) => {
     pan_card,
     avg_daily_income,
     working_hours,
+    vehicle_number,
+    partner_platform,
   } = req.body;
 
   if (!phone) {
@@ -279,9 +297,20 @@ app.post('/api/update-settings', async (req, res) => {
               zone = COALESCE($2, zone),
               pan_card = COALESCE($3, pan_card),
               avg_daily_income = COALESCE($4, avg_daily_income),
-              working_hours = COALESCE($5, working_hours)
-        WHERE phone = $6`,
-      [name || null, city || null, pan_card || null, avg_daily_income || null, working_hours || null, phone]
+              working_hours = COALESCE($5, working_hours),
+              vehicle_number = COALESCE($6, vehicle_number),
+              partner_platform = COALESCE($7, partner_platform)
+        WHERE phone = $8`,
+      [
+        name || null,
+        city || null,
+        pan_card || null,
+        avg_daily_income || null,
+        working_hours || null,
+        vehicle_number ? vehicle_number.toUpperCase() : null,
+        partner_platform || null,
+        phone
+      ]
     );
 
     const result = await pool.query('SELECT * FROM users WHERE phone = $1', [phone]);
@@ -291,6 +320,42 @@ app.post('/api/update-settings', async (req, res) => {
 
     return res.json({
       message: 'Settings updated successfully',
+      user: safeUser(result.rows[0]),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/user/update', async (req, res) => {
+  const {
+    id,
+    phone,
+    vehicle_number,
+    partner_platform,
+  } = req.body;
+
+  if (!id && !phone) {
+    return res.status(400).json({ error: 'id or phone is required' });
+  }
+
+  try {
+    const query = id 
+      ? 'UPDATE users SET vehicle_number = COALESCE($1, vehicle_number), partner_platform = COALESCE($2, partner_platform) WHERE id = $3 RETURNING *'
+      : 'UPDATE users SET vehicle_number = COALESCE($1, vehicle_number), partner_platform = COALESCE($2, partner_platform) WHERE phone = $3 RETURNING *';
+    
+    const result = await pool.query(query, [
+      vehicle_number ? vehicle_number.toUpperCase() : null,
+      partner_platform || null,
+      id || phone
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({
+      message: 'Profile updated successfully',
       user: safeUser(result.rows[0]),
     });
   } catch (error) {
@@ -312,7 +377,7 @@ app.get('/api/user/:id', async (req, res) => {
 });
 
 app.use('/api/risk', riskRouter);
-app.use('/api/admin', riskRouter);
+app.use('/api/admin', adminModule.router);
 app.use('/api/policy', policiesModule.router);
 app.use('/api/user', policiesModule.router);
 app.use('/api/claim', payoutsModule.router);

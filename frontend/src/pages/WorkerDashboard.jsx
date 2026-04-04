@@ -11,6 +11,8 @@ import {
   MapPin,
   Settings,
   Shield,
+  Truck,
+  User,
   Wallet,
   Zap,
 } from 'lucide-react';
@@ -30,6 +32,7 @@ import PolicyTiers from './PolicyTiers';
 import PayoutHistory from './PayoutHistory';
 import SettingsPage from './Settings';
 import NotificationsPage from './Notifications';
+import EarningsPage from './Earnings';
 import { formatCurrency, getRiskTone } from '../lib/insurance';
 
 const WorkerDashboard = ({
@@ -132,7 +135,7 @@ const WorkerDashboard = ({
           <SidebarItem icon={<Shield size={20} />} label="Policy Tiers" active={activeTab === 'policy'} onClick={() => setActiveTab('policy')} />
           <SidebarItem icon={<History size={20} />} label="Payout History" active={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
           <SidebarItem icon={<Bell size={20} />} label="Notifications" active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} />
-          <SidebarItem icon={<Wallet size={20} />} label="Earnings" active={activeTab === 'earnings'} onClick={() => setActiveTab('overview')} />
+          <SidebarItem icon={<Wallet size={20} />} label="Payout and Premium" active={activeTab === 'earnings'} onClick={() => setActiveTab('earnings')} />
           <SidebarItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
         </nav>
 
@@ -146,11 +149,25 @@ const WorkerDashboard = ({
 
       <div className="flex-1 flex flex-col">
         <header className="h-20 bg-[#0B1222]/80 backdrop-blur-md border-b border-slate-700/50 px-8 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <h2 className="text-xl font-black text-slate-100">Welcome, {user.name}</h2>
-            <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              Active Partner
-            </span>
+            {user.vehicle_number && (
+              <span className="bg-slate-800/80 text-blue-400 border border-slate-700/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
+                <Truck size={12} className="text-blue-500" /> {user.vehicle_number}
+              </span>
+            )}
+            {user.partner_platform && (
+              <span 
+                className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm"
+                style={{
+                  backgroundColor: getPartnerColor(user.partner_platform, 0.1),
+                  color: getPartnerColor(user.partner_platform, 1),
+                  borderColor: getPartnerColor(user.partner_platform, 0.3)
+                }}
+              >
+                {user.partner_platform}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-6">
@@ -215,6 +232,26 @@ const WorkerDashboard = ({
         </header>
 
         <main className="p-8 space-y-8 max-w-7xl mx-auto w-full">
+          {!user.vehicle_number || !user.partner_platform ? (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-[28px] p-6 flex flex-col md:flex-row items-center justify-between gap-4 animate-pulse">
+              <div className="flex items-center gap-4 text-center md:text-left">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                  <User size={24} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-amber-200">Complete Your Profile!</h4>
+                  <p className="text-sm font-medium text-amber-400/80">Vehicle number and partner info are required for faster payouts.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveTab('settings')}
+                className="px-6 py-3 bg-amber-500 text-slate-900 rounded-xl font-black text-sm hover:bg-amber-400 transition-all uppercase tracking-widest whitespace-nowrap"
+              >
+                Go to Settings
+              </button>
+            </div>
+          ) : null}
+
           {activeTab === 'overview' && (
             <>
               <div className="grid xl:grid-cols-[1.6fr_1fr] gap-8">
@@ -420,6 +457,10 @@ const WorkerDashboard = ({
 
           {activeTab === 'notifications' && <NotificationsPage />}
 
+          {activeTab === 'earnings' && (
+            <EarningsPage summary={summary} />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsPage user={user} setUser={setUser} />
           )}
@@ -508,5 +549,17 @@ const NotificationItem = ({ title, text }) => (
     <p className="text-xs text-slate-400 mt-2 leading-5">{text}</p>
   </div>
 );
+
+const getPartnerColor = (platform, opacity = 1) => {
+  const colors = {
+    'Swiggy': `rgba(252, 128, 25, ${opacity})`,
+    'Zomato': `rgba(226, 55, 68, ${opacity})`,
+    'Amazon': `rgba(255, 153, 0, ${opacity})`,
+    'Flipkart': `rgba(40, 116, 240, ${opacity})`,
+    'Zepto': `rgba(85, 16, 139, ${opacity})`,
+    'Other': `rgba(100, 116, 139, ${opacity})`
+  };
+  return colors[platform] || colors['Other'];
+};
 
 export default WorkerDashboard;

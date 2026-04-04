@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, MapPin, ShieldCheck, Smartphone, User, WalletCards } from 'lucide-react';
+import { ArrowRight, Briefcase, CheckCircle2, MapPin, ShieldCheck, Smartphone, Truck, User, WalletCards } from 'lucide-react';
 import { apiRequest } from '../lib/api';
 import { SUPPORTED_CITIES } from '../lib/insurance';
 
@@ -16,17 +16,19 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
     phone: '',
     pan_card: '',
     city: '',
+    vehicle_number: '',
+    partner_platform: '',
   });
   const [otp, setOtp] = useState('');
 
   const canSendOtp = useMemo(
-    () => Boolean(formData.name && formData.phone && formData.pan_card && formData.city),
+    () => Boolean(formData.name && formData.phone && formData.pan_card && formData.city && formData.vehicle_number && formData.partner_platform),
     [formData]
   );
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    const nextValue = name === 'pan_card' ? value.toUpperCase() : value;
+    const nextValue = (name === 'pan_card' || name === 'vehicle_number') ? value.toUpperCase() : value;
     setFormData((current) => ({ ...current, [name]: nextValue }));
   };
 
@@ -105,6 +107,25 @@ const SignUp = ({ onRegister, onNavigateToSignIn }) => {
                     <option value="" disabled>Select your city</option>
                     {SUPPORTED_CITIES.map((city) => (
                       <option key={city} value={city} className="bg-slate-900 text-slate-200">{city}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <Field label="Vehicle Number" icon={<Truck size={16} />} name="vehicle_number" value={formData.vehicle_number} onChange={handleChange} placeholder="UP16 AB 1234" />
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Delivery Partner</label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><Briefcase size={16} /></div>
+                  <select
+                    required
+                    name="partner_platform"
+                    value={formData.partner_platform}
+                    onChange={handleChange}
+                    className="w-full pl-9 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:border-blue-500 outline-none transition-all font-bold text-slate-200 cursor-pointer appearance-none"
+                  >
+                    <option value="" disabled>Select partner</option>
+                    {['Swiggy', 'Zomato', 'Amazon', 'Flipkart', 'Zepto', 'Other'].map((p) => (
+                      <option key={p} value={p} className="bg-slate-900 text-slate-200">{p}</option>
                     ))}
                   </select>
                 </div>

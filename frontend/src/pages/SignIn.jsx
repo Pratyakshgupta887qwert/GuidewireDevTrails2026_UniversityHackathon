@@ -38,7 +38,7 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
         body: JSON.stringify({ phone }),
       });
 
-      onLogin?.(data.user);
+      onLogin?.(data.user, phone);
     } catch (loginError) {
       setError(loginError.message);
     } finally {

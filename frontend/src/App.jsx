@@ -3,8 +3,11 @@ import LandingPage from './pages/Landing';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import WorkerDashboard from './pages/WorkerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import { apiRequest } from './lib/api';
 import { formatCurrency } from './lib/insurance';
+
+const ADMIN_PHONE = '9998887776';
 
 const GUEST_USER = {
   name: 'Guest User',
@@ -27,7 +30,8 @@ const EMPTY_SUMMARY = {
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
     const storedPage = localStorage.getItem('aegis_current_page');
-    return storedPage === 'dashboard' ? 'dashboard' : 'landing';
+    if (storedPage === 'dashboard' || storedPage === 'admin-dashboard') return storedPage;
+    return 'landing';
   });
   const [activeTab, setActiveTab] = useState('overview');
   const [user, setUser] = useState(() => {
@@ -194,11 +198,24 @@ function App() {
       case 'signin':
         return (
           <SignIn
-            onLogin={(userData) => {
+            onLogin={(userData, phone) => {
               updateSessionUser(userData);
-              navigateTo('dashboard');
+              if (phone === ADMIN_PHONE) {
+                navigateTo('admin-dashboard');
+              } else {
+                navigateTo('dashboard');
+              }
             }}
             onNavigateToSignUp={() => navigateTo('signup')}
+          />
+        );
+      case 'admin-dashboard':
+        return (
+          <AdminDashboard
+            onLogout={() => {
+              updateSessionUser(null);
+              navigateTo('landing');
+            }}
           />
         );
       case 'signup':
