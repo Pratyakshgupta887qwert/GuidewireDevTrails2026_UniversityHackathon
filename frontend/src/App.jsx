@@ -3,70 +3,56 @@ import LandingPage from './pages/Landing';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import WorkerDashboard from './pages/WorkerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import { apiRequest } from './lib/api';
+import { formatCurrency } from './lib/insurance';
 
-// UUID v4 pattern – used to detect stale integer-based sessions
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const isValidUUID = (v) => UUID_RE.test(String(v ?? ''));
+const ADMIN_PHONE = '9998887776';
 
 const GUEST_USER = {
   name: 'Guest User',
-  zone: 'Unknown',
+  phone: '',
+  city: '',
+  pan_card: '',
   balance: 0,
-  isProtected: false,
-  aadhaar_verified: false
+  aadhaar_verified: false,
+  aadhaar_number: '',
+  avg_daily_income: 1200,
+  working_hours: 10,
+};
+
+const EMPTY_SUMMARY = {
+  total_premium_paid: 0,
+  total_payout_received: 0,
+  profit: 0,
 };
 
 function App() {
   const [currentPage, setCurrentPage] = useState(() => {
-    // If there's a stale session with a non-UUID id, start on landing
-    const saved = localStorage.getItem('aegis_user_data');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed?.id && !isValidUUID(parsed.id)) {
-          // Stale integer-based session from old backend – clear it
-          localStorage.removeItem('aegis_user_data');
-          localStorage.removeItem('aegis_current_page');
-          return 'signin';
-        }
-      } catch { /* ignore */ }
-    }
-    const page = localStorage.getItem('aegis_current_page');
-    return page === 'dashboard' ? 'dashboard' : 'landing';
+    const storedPage = localStorage.getItem('aegis_current_page');
+    if (storedPage === 'dashboard' || storedPage === 'admin-dashboard') return storedPage;
+    return 'landing';
   });
   const [activeTab, setActiveTab] = useState('overview');
-  const [isDisrupted, setIsDisrupted] = useState(false);
-  const [rainLevel, setRainLevel] = useState(0);
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('aegis_user_data');
-    if (!saved) return GUEST_USER;
+    if (!saved) {
+      return GUEST_USER;
+    }
+
     try {
-      const parsed = JSON.parse(saved);
-      // Guard: reject stale integer IDs
-      if (parsed?.id && !isValidUUID(parsed.id)) return GUEST_USER;
-      return { ...GUEST_USER, ...parsed };
-    } catch { return GUEST_USER; }
+      return { ...GUEST_USER, ...JSON.parse(saved) };
+    } catch {
+      return GUEST_USER;
+    }
   });
   const [activePolicy, setActivePolicy] = useState(null);
   const [claims, setClaims] = useState([]);
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
+  const [riskSnapshot, setRiskSnapshot] = useState(null);
   const [isEventLoading, setIsEventLoading] = useState(false);
-  const [payoutToast, setPayoutToast] = useState(null); // { count, amount }
+  const [payoutToast, setPayoutToast] = useState(null);
   const payoutToastTimer = useRef(null);
-
-  useEffect(() => {
-    const loadRiskStatus = async () => {
-      try {
-        const data = await apiRequest('/api/risk/status');
-        setIsDisrupted(Boolean(data.isDisrupted));
-        setRainLevel(Number(data.rainLevel || 0));
-      } catch (error) {
-        console.error('Unable to load risk status', error);
-      }
-    };
-
-    loadRiskStatus();
-  }, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -74,16 +60,29 @@ function App() {
     }
   }, [user]);
 
-  const updateSessionUser = (incomingUser) => {
-    const nextUser = incomingUser?.id
-      ? {
-          ...GUEST_USER,
-          ...incomingUser,
-          balance: incomingUser.balance ?? 1250,
-          zone: incomingUser.zone || 'Sector 62, Noida'
-        }
-      : GUEST_USER;
+  useEffect(() => {
+    if (!user?.city) {
+      setRiskSnapshot(null);
+      return;
+    }
 
+    const loadRiskScore = async () => {
+      try {
+        const data = await apiRequest('/api/risk-score', {
+          method: 'POST',
+          body: JSON.stringify({ city: user.city }),
+        });
+        setRiskSnapshot(data);
+      } catch (error) {
+        console.error('Unable to load risk score', error);
+      }
+    };
+
+    loadRiskScore();
+  }, [user?.city]);
+
+  const updateSessionUser = (incomingUser) => {
+    const nextUser = incomingUser?.id ? { ...GUEST_USER, ...incomingUser } : GUEST_USER;
     setUser(nextUser);
 
     if (!nextUser.id) {
@@ -91,117 +90,102 @@ function App() {
     }
   };
 
-  const refreshProtectionData = async (userId) => {
-    if (!userId) {
-      setActivePolicy(null);
-      setClaims([]);
-      return;
-    }
-
-    const [policyResult, claimsResult] = await Promise.allSettled([
-      apiRequest(`/api/policy/active/${userId}`),
-      apiRequest(`/api/claims/${userId}`)
-    ]);
-
-    const nextPolicy = policyResult.status === 'fulfilled' ? policyResult.value : null;
-    const nextClaims = claimsResult.status === 'fulfilled' ? claimsResult.value.claims || [] : [];
-
-    setActivePolicy(nextPolicy);
-    setClaims(nextClaims);
-    setUser((currentUser) => (
-      currentUser?.id === userId
-        ? { ...currentUser, isProtected: Boolean(nextPolicy) }
-        : currentUser
-    ));
-  };
-
-  useEffect(() => {
-    refreshProtectionData(user?.id);
-  }, [user?.id]);
-
   const navigateTo = (page) => {
     window.scrollTo(0, 0);
     setCurrentPage(page);
     localStorage.setItem('aegis_current_page', page);
   };
 
+  const refreshProtectionData = async (userId) => {
+    if (!userId) {
+      setActivePolicy(null);
+      setClaims([]);
+      setSummary(EMPTY_SUMMARY);
+      return;
+    }
+
+    const [policyResult, claimsResult, userResult] = await Promise.allSettled([
+      apiRequest(`/api/policy/active/${userId}`),
+      apiRequest(`/api/claims/${userId}`),
+      apiRequest(`/api/user/${userId}`),
+    ]);
+
+    setActivePolicy(policyResult.status === 'fulfilled' ? policyResult.value : null);
+    setClaims(claimsResult.status === 'fulfilled' ? claimsResult.value.claims || [] : []);
+    setSummary(claimsResult.status === 'fulfilled' ? claimsResult.value.summary || EMPTY_SUMMARY : EMPTY_SUMMARY);
+
+    if (userResult.status === 'fulfilled') {
+      updateSessionUser(userResult.value.user);
+    }
+  };
+
+  useEffect(() => {
+    refreshProtectionData(user?.id);
+  }, [user?.id]);
+
   const handlePurchasePolicy = async (selectedTier) => {
     if (!user?.id) {
-      throw new Error('Please sign in again before activating a shield.');
-    }
-    if (!isValidUUID(user.id)) {
-      // Stale session detected at purchase time – force re-login
-      localStorage.removeItem('aegis_user_data');
-      updateSessionUser(null);
-      throw new Error('Your session has expired. Please sign out and sign back in.');
+      throw new Error('Please sign in before activating a shield.');
     }
 
     const data = await apiRequest('/api/policy/purchase', {
       method: 'POST',
       body: JSON.stringify({
         user_id: user.id,
-        selected_tier: selectedTier
-      })
+        selected_tier: selectedTier,
+      }),
     });
 
     setActivePolicy(data.policy);
-    setUser((currentUser) => ({ ...currentUser, isProtected: true }));
     await refreshProtectionData(user.id);
     return data.policy;
   };
 
-  const handleVerifyAadhaar = async (aadhaarNumber) => {
+  const handleVerifyAadhaar = async ({ aadhaarNumber, otp }) => {
     const data = await apiRequest('/api/user/verify-aadhaar', {
       method: 'POST',
       body: JSON.stringify({
         user_id: user.id,
-        aadhaar_number: aadhaarNumber
-      })
+        aadhaar_number: aadhaarNumber,
+        otp,
+      }),
     });
 
-    updateSessionUser({ ...user, ...data.user });
+    updateSessionUser(data.user);
     return data.user;
   };
 
   const handleSimulateEvent = async () => {
-    setIsEventLoading(true);
-    try {
-      const payload = isDisrupted
-        ? { event_type: 'heavy_rain', rain: 0, disruption_hours: 0, hourly_rate: 150 }
-        : { event_type: 'heavy_rain', rain: 12, disruption_hours: 3, hourly_rate: 150 };
+    if (!user?.id) {
+      return;
+    }
 
-      const data = await apiRequest('/api/admin/trigger-event', {
+    setIsEventLoading(true);
+
+    try {
+      const data = await apiRequest('/api/simulate-event', {
         method: 'POST',
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ user_id: user.id }),
       });
 
-      setIsDisrupted(Boolean(data.isDisrupted));
-      setRainLevel(Number(data.rainLevel || 0));
+      updateSessionUser(data.user);
+      await refreshProtectionData(user.id);
 
-      // Show payout toast if claims were auto-generated
-      const realClaims = (data.claimsGenerated || []).filter(c => !c.note);
-      if (data.isDisrupted && realClaims.length > 0) {
-        const totalPayout = realClaims.reduce((sum, c) => sum + (c.payout_amount || 0), 0);
-        setPayoutToast({ count: realClaims.length, amount: totalPayout });
-        clearTimeout(payoutToastTimer.current);
-        payoutToastTimer.current = setTimeout(() => setPayoutToast(null), 5000);
-      }
+      setPayoutToast({
+        payout: data.payout,
+        disruptionHours: data.disruption_hours,
+        hourlyIncome: data.hourly_income,
+      });
 
-      // Refresh protection data + fetch fresh user (with updated balance)
-      if (user?.id && isValidUUID(user.id)) {
-        setTimeout(async () => {
-          await refreshProtectionData(user.id);
-          // Fetch updated balance from DB
-          try {
-            const freshData = await apiRequest(`/api/user/${user.id}`);
-            if (freshData?.user) {
-              setUser(prev => ({ ...prev, balance: freshData.user.balance }));
-            }
-          } catch { /* non-critical */ }
-        }, 600);
-      }
+      clearTimeout(payoutToastTimer.current);
+      payoutToastTimer.current = setTimeout(() => setPayoutToast(null), 4500);
     } catch (error) {
-      console.error('Unable to trigger event', error);
+      console.error('Unable to simulate event', error);
+      setPayoutToast({
+        error: error.message,
+      });
+      clearTimeout(payoutToastTimer.current);
+      payoutToastTimer.current = setTimeout(() => setPayoutToast(null), 4500);
     } finally {
       setIsEventLoading(false);
     }
@@ -211,23 +195,29 @@ function App() {
     switch (currentPage) {
       case 'landing':
         return <LandingPage onStart={() => navigateTo('signin')} />;
-
       case 'signin':
         return (
           <SignIn
-            onLogin={(userData) => {
-              updateSessionUser({
-                ...userData,
-                balance: 1250,
-                isProtected: false,
-                zone: userData.zone || 'Sector 62, Noida'
-              });
-              navigateTo('dashboard');
+            onLogin={(userData, phone) => {
+              updateSessionUser(userData);
+              if (phone === ADMIN_PHONE) {
+                navigateTo('admin-dashboard');
+              } else {
+                navigateTo('dashboard');
+              }
             }}
             onNavigateToSignUp={() => navigateTo('signup')}
           />
         );
-
+      case 'admin-dashboard':
+        return (
+          <AdminDashboard
+            onLogout={() => {
+              updateSessionUser(null);
+              navigateTo('landing');
+            }}
+          />
+        );
       case 'signup':
         return (
           <SignUp
@@ -235,7 +225,6 @@ function App() {
             onNavigateToSignIn={() => navigateTo('signin')}
           />
         );
-
       case 'dashboard':
         return (
           <WorkerDashboard
@@ -243,8 +232,8 @@ function App() {
             setUser={updateSessionUser}
             activePolicy={activePolicy}
             claims={claims}
-            isDisrupted={isDisrupted}
-            rainLevel={rainLevel}
+            summary={summary}
+            riskSnapshot={riskSnapshot}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onPurchasePolicy={handlePurchasePolicy}
@@ -254,6 +243,7 @@ function App() {
               setActiveTab('overview');
               setActivePolicy(null);
               setClaims([]);
+              setSummary(EMPTY_SUMMARY);
               updateSessionUser(null);
               navigateTo('landing');
             }}
@@ -263,7 +253,6 @@ function App() {
             }}
           />
         );
-
       default:
         return <LandingPage onStart={() => navigateTo('signin')} />;
     }
@@ -280,32 +269,32 @@ function App() {
           <button
             onClick={handleSimulateEvent}
             disabled={isEventLoading}
-            className={`px-6 py-3 rounded-2xl text-xs font-black shadow-2xl transition-all uppercase tracking-widest disabled:opacity-60 ${
-              isDisrupted ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white animate-pulse'
-            }`}
+            className="px-6 py-3 rounded-2xl text-xs font-black shadow-2xl transition-all uppercase tracking-widest disabled:opacity-60 bg-red-600 text-white"
           >
-            {isEventLoading
-              ? 'Processing event...'
-              : isDisrupted
-                ? 'Reset Weather'
-                : 'Simulate Heavy Rain'}
+            {isEventLoading ? 'Processing event...' : 'Simulate Heavy Rain'}
           </button>
         </div>
       )}
 
-      {/* Auto-payout toast – appears after simulate generates claims */}
       {payoutToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-emerald-950/95 border border-emerald-500/40 backdrop-blur-md px-6 py-4 rounded-[20px] shadow-2xl shadow-black/40 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-              <span className="text-emerald-400 text-lg">⚡</span>
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Auto-Payout Processed</p>
-              <p className="text-sm font-bold text-emerald-100 mt-0.5">
-                ₹{payoutToast.amount.toFixed(0)} credited across {payoutToast.count} policy{payoutToast.count > 1 ? 's' : ''}
-              </p>
-            </div>
+          <div className={`backdrop-blur-md px-6 py-4 rounded-[20px] shadow-2xl shadow-black/40 border ${
+            payoutToast.error
+              ? 'bg-rose-950/95 border-rose-500/40'
+              : 'bg-emerald-950/95 border-emerald-500/40'
+          }`}>
+            <p className={`text-[10px] font-black uppercase tracking-widest ${
+              payoutToast.error ? 'text-rose-300' : 'text-emerald-400'
+            }`}>
+              {payoutToast.error ? 'Simulation Blocked' : 'Heavy Rain Payout Processed'}
+            </p>
+            <p className={`text-sm font-bold mt-1 ${
+              payoutToast.error ? 'text-rose-100' : 'text-emerald-100'
+            }`}>
+              {payoutToast.error
+                ? payoutToast.error
+                : `${formatCurrency(payoutToast.payout)} credited for ${payoutToast.disruptionHours} disruption hours at ${formatCurrency(payoutToast.hourlyIncome)}/hr`}
+            </p>
           </div>
         </div>
       )}
