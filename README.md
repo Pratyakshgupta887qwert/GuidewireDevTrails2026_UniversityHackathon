@@ -3,6 +3,19 @@
 
 ---
 
+## Current Build Status
+
+AegisAI is currently in the MVP stage, with a functional working prototype that demonstrates the core insurance flow end to end. The current build includes simulated OTP-based onboarding, a mock city risk engine, dynamic weekly premium calculation, Aadhaar-gated policy activation, and automated payout simulation for disruption events.
+
+As the project progresses into later phases, we plan to expand this prototype with live external API integrations, deeper fraud intelligence, stronger geospatial validation, and more advanced automation across the claims pipeline.
+
+---
+
+## 🚀 Live Demo
+- **Frontend (Vercel) + Backend (Render) :** (https://guidewire-dev-trails2026-university.vercel.app/)
+
+---
+
 ## ⚡ The Reality
 
 A delivery worker starts his day expecting ₹800.
