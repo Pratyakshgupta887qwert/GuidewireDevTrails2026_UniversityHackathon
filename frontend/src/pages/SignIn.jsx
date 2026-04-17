@@ -47,6 +47,12 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
   };
 
   return (
+    <>
+    <div>
+      <b>For the worker dashboard</b><br></br> you can create a new account by clicking on “Sign up here.” Once registered, simply log in to access your dashboard.<br></br>
+      <b>And for Admin Dashboard </b> <br></br> you can sign in directly only with the mobile number 9998887776 and then click on SEND OTP and write otp 123456 .
+
+    </div>
     <div className="min-h-screen bg-transparent flex items-center justify-center p-6 relative overflow-hidden z-10">
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] opacity-80 pointer-events-none"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] opacity-80 pointer-events-none"></div>
@@ -145,6 +151,7 @@ const SignIn = ({ onLogin, onNavigateToSignUp }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
